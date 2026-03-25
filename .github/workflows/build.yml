@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-mac:
     runs-on: macos-latest
@@ -38,15 +41,12 @@ jobs:
         run: |
           mkdir -p python-embed/lib
           pip install -r backend/requirements.txt --target ./python-embed/lib/python3.11/site-packages
-          # Create a simple python wrapper script
           echo '#!/bin/bash
           exec python3 "$@"' > python-embed/python3
           chmod +x python-embed/python3
 
-      - name: Build Electron app
-        run: npm run package:mac
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Electron app (no publish)
+        run: npm run package:mac -- --publish never
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -89,10 +89,8 @@ jobs:
       - name: Build frontend and Electron
         run: npm run build:frontend
 
-      - name: Build Electron app
-        run: npm run package:win
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Electron app (no publish)
+        run: npm run package:win -- --publish never
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -104,6 +102,8 @@ jobs:
   release:
     needs: [build-mac, build-win]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
