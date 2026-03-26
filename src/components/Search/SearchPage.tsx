@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
-import { Input, Button, Space, message, Checkbox, FloatButton, Drawer, Tag, Card } from 'antd'
+import { useState } from 'react'
+import { Input, Button, Space, message, Checkbox, FloatButton, Drawer, Card } from 'antd'
 import { SearchOutlined, RobotOutlined, SendOutlined, PlusOutlined } from '@ant-design/icons'
-import { useWorkspace, PendingBook } from '../../contexts/WorkspaceContext'
+import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookList } from '../Common/BookList'
 
 interface BookResult {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal, Form, Input, Select, InputNumber, Button, Space, Divider, message, Tag, Switch, Row, Col } from 'antd'
 import { SettingOutlined, SaveOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, MoonOutlined } from '@ant-design/icons'
 import { useTheme } from '../../contexts/ThemeContext'
@@ -57,7 +57,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [loading, setLoading] = useState(false)
   const [testingApi, setTestingApi] = useState(false)
   const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle')
-  const { theme, toggleTheme, isDark } = useTheme()
+  const { toggleTheme, isDark } = useTheme()
 
   // 加载配置
   useEffect(() => {

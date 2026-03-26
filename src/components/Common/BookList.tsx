@@ -1,8 +1,6 @@
-import React, { useState, useMemo } from 'react'
-import { List, Checkbox, Progress, Tag, Space, Typography, Empty, Pagination, Card } from 'antd'
+import { useState, useMemo } from 'react'
+import { List, Checkbox, Progress, Tag, Empty, Pagination } from 'antd'
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
-
-const { Text } = Typography
 
 interface BookItem {
   id: number
@@ -29,7 +27,6 @@ interface BookListProps {
   onSelectionChange?: (keys: number[]) => void
   onRemove?: (id: number) => void
   downloadProgress?: Record<number, number>
-  batchResults?: DownloadResult[]
   emptyDescription?: string
 }
 
@@ -41,17 +38,18 @@ export function BookList({
   onSelectionChange,
   onRemove,
   downloadProgress = {},
-  batchResults,
   emptyDescription = '暂无数据'
 }: BookListProps) {
   // 分页状态
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
 
+  const dataLength = (data as BookItem[]).length
+
   // 计算分页数据
   const paginatedData = useMemo(() => {
     if (type === 'completed') {
-      return data // 已完成类型不分页
+      return data as DownloadResult[]
     }
     const start = (currentPage - 1) * pageSize
     const end = start + pageSize
@@ -79,8 +77,7 @@ export function BookList({
           {type === 'search' && onSelectionChange && (
             <Checkbox
               checked={isSelected}
-              onChange={(e) => {
-                e.stopPropagation()
+              onChange={() => {
                 if (isSelected) {
                   onSelectionChange(selectedRowKeys.filter(k => k !== book.id))
                 } else {
@@ -129,7 +126,7 @@ export function BookList({
           {onRemove && type !== 'search' && (
             <Checkbox
               checked={isSelected}
-              onChange={(e) => {
+              onChange={() => {
                 if (isSelected) {
                   onSelectionChange?.(selectedRowKeys.filter(k => k !== book.id))
                 } else {
@@ -189,7 +186,7 @@ export function BookList({
       <List
         dataSource={paginatedData}
         loading={loading}
-        renderItem={(item) =>
+        renderItem={(item: BookItem | DownloadResult) =>
           type === 'completed' ? (
             renderCompletedItem(item as DownloadResult)
           ) : (
@@ -199,10 +196,10 @@ export function BookList({
       />
 
       {/* 分页器 - 仅搜索和下载列表显示 */}
-      {type !== 'completed' && data.length > pageSize && (
+      {type !== 'completed' && dataLength > pageSize && (
         <Pagination
           current={currentPage}
-          total={data.length}
+          total={dataLength}
           pageSize={pageSize}
           onChange={setCurrentPage}
           style={{

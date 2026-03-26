@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Typography, Button, Space, Tooltip } from 'antd'
 import { SettingOutlined, FolderOutlined, MoonOutlined, SunOutlined } from '@ant-design/icons'
 import { Sidebar } from './Sidebar'
@@ -13,7 +13,7 @@ const { Text } = Typography
 
 export function AppLayout() {
   const { currentPage, workspacePath } = useWorkspace()
-  const { theme, toggleTheme, isDark } = useTheme()
+  const { toggleTheme, isDark } = useTheme()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const renderContent = () => {

@@ -1,18 +1,17 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Tabs, Button, Progress, Space, message, Card, Typography, Empty, Tag, Collapse } from 'antd'
-import { PlayCircleOutlined, DeleteOutlined, FolderOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
-import { useWorkspace, PendingBook, Batch, DownloadResult } from '../../contexts/WorkspaceContext'
+import { PlayCircleOutlined, FolderOutlined } from '@ant-design/icons'
+import { useWorkspace, PendingBook, Batch } from '../../contexts/WorkspaceContext'
 import { BookList } from '../Common/BookList'
 
-const { Text } = Typography
 const { Panel } = Collapse
+const { Text } = Typography
 
 export function DownloadPage() {
   const {
     workspaceData,
     workspacePath,
     removeFromPending,
-    selectAllPending,
     updatePendingSelection,
     addBatch,
     updateBatch
@@ -21,7 +20,6 @@ export function DownloadPage() {
   const [activeTab, setActiveTab] = useState('pending')
   const [downloading, setDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState<Record<number, number>>({})
-  const [currentBatchId, setCurrentBatchId] = useState<number | null>(null)
   const [currentDownloadBooks, setCurrentDownloadBooks] = useState<PendingBook[]>([])
 
   const pendingBooks = workspaceData?.pendingDownloads || []
@@ -50,7 +48,6 @@ export function DownloadPage() {
     }
 
     addBatch(newBatch)
-    setCurrentBatchId(batchId)
     setCurrentDownloadBooks(selectedBooks)
     setDownloading(true)
     setDownloadProgress({})
@@ -102,10 +99,8 @@ export function DownloadPage() {
     } catch (error) {
       message.error('下载失败')
       console.error(error)
-      updateBatch(batchId, { status: 'failed' })
     } finally {
       setDownloading(false)
-      setCurrentBatchId(null)
       setCurrentDownloadBooks([])
       setDownloadProgress({})
       setActiveTab('completed')
@@ -211,8 +206,8 @@ export function DownloadPage() {
             header={
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <FolderOutlined style={{ color: 'var(--accent-color)' }} />
-                <Text strong style={{ fontSize: 15 }}>{batch.name}</Text>
-                <Text type="secondary" style={{ fontSize: 13 }}>{batch.createdAt.split('T')[0]}</Text>
+                <Typography.Text strong style={{ fontSize: 15 }}>{batch.name}</Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>{batch.createdAt.split('T')[0]}</Typography.Text>
                 <Tag color="green" style={{ marginLeft: 8 }}>成功 {batch.success}</Tag>
                 {batch.failed > 0 && <Tag color="red">失败 {batch.failed}</Tag>}
               </div>
@@ -227,7 +222,6 @@ export function DownloadPage() {
             <BookList
               type="completed"
               data={batch.results}
-              batchResults={batch.results}
               emptyDescription="本批次无数据"
             />
           </Panel>

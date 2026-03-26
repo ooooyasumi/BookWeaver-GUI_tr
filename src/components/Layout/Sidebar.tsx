@@ -1,4 +1,3 @@
-import React from 'react'
 import { Menu } from 'antd'
 import { SearchOutlined, DownloadOutlined, BookOutlined } from '@ant-design/icons'
 import { useWorkspace, PageType } from '../../contexts/WorkspaceContext'
@@ -57,12 +56,6 @@ export function Sidebar() {
           border: 'none',
           background: 'transparent',
           paddingTop: 16
-        }}
-        itemStyle={{
-          marginBottom: 4,
-          borderRadius: 8,
-          margin: '4px 12px',
-          padding: '12px 16px'
         }}
       />
       <div

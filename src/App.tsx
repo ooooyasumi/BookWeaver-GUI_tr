@@ -7,7 +7,6 @@ import { AppLayout } from './components/Layout/AppLayout'
 
 function AppContent() {
   const { isWorkspaceOpen } = useWorkspace()
-  const { isDark } = useTheme()
 
   if (!isWorkspaceOpen) {
     return <WelcomePage />

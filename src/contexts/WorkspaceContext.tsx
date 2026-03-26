@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 // TypeScript 类型声明
 declare global {
@@ -101,15 +101,6 @@ interface WorkspaceContextType {
   // 批次操作
   addBatch: (batch: Batch) => void
   updateBatch: (id: number, batch: Partial<Batch>) => void
-}
-
-const defaultWorkspaceData: WorkspaceData = {
-  version: '1.0',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  pendingDownloads: [],
-  currentBatch: null,
-  batches: []
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined)

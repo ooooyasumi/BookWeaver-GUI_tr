@@ -1,4 +1,4 @@
-import React, { useState, useCallback, DragEvent } from 'react'
+import { useState, useCallback, DragEvent } from 'react'
 import { Button, Typography, Space, message, Tag } from 'antd'
 import { FolderOpenOutlined, FolderAddOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
