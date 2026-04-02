@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, globalShortcut } from 'electron'
 import path from 'path'
 import { spawn, ChildProcess } from 'child_process'
 import { WorkspaceManager, AppState, BatchMeta } from './workspace'
@@ -37,6 +37,14 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
+
+  // 注册快捷键打开 DevTools (Cmd+Option+I 或 F12)
+  globalShortcut.register('CommandOrControl+Alt+I', () => {
+    mainWindow?.webContents.openDevTools()
+  })
+  globalShortcut.register('F12', () => {
+    mainWindow?.webContents.openDevTools()
+  })
 }
 
 function startPythonBackend() {

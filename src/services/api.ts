@@ -5,6 +5,30 @@ const API_BASE = window.location.protocol === 'file:'
   ? 'http://127.0.0.1:8765/api'
   : '/api'
 
+// 调试日志
+function debugLog(...args: unknown[]) {
+  console.log('[API Debug]', ...args)
+}
+
+// 详细错误处理
+async function handleApiError(response: Response, url: string, operation: string): Promise<Error> {
+  let errorDetail = ''
+  try {
+    const text = await response.text()
+    errorDetail = text ? `响应内容: ${text}` : '无响应内容'
+  } catch {
+    errorDetail = '无法读取响应内容'
+  }
+
+  const message = `${operation}失败\n` +
+    `URL: ${url}\n` +
+    `状态码: ${response.status} ${response.statusText}\n` +
+    `${errorDetail}`
+
+  debugLog('API Error:', message)
+  return new Error(message)
+}
+
 // 书籍搜索
 export async function searchBooks(params: {
   title?: string
@@ -26,9 +50,29 @@ export async function searchBooks(params: {
   if (params.language) query.append('language', params.language)
   if (params.limit) query.append('limit', String(params.limit))
 
-  const response = await fetch(`${API_BASE}/books/search?${query}`)
-  if (!response.ok) throw new Error('搜索失败')
-  return response.json()
+  const url = `${API_BASE}/books/search?${query}`
+  debugLog('搜索请求:', url, '参数:', params)
+
+  try {
+    const response = await fetch(url)
+    debugLog('搜索响应:', response.status, response.statusText)
+
+    if (!response.ok) {
+      throw await handleApiError(response, url, '搜索')
+    }
+    return response.json()
+  } catch (err) {
+    // 网络错误（无法连接到服务器）
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      debugLog('网络错误:', err)
+      throw new Error(`搜索失败：无法连接到后端服务器\n` +
+        `URL: ${url}\n` +
+        `API_BASE: ${API_BASE}\n` +
+        `当前协议: ${window.location.protocol}\n` +
+        `请检查后端是否已启动 (127.0.0.1:8765)`)
+    }
+    throw err
+  }
 }
 
 // 目录状态
@@ -37,15 +81,39 @@ export async function getCatalogStatus(): Promise<{
   lastUpdate: string | null
   totalBooks: number
 }> {
-  const response = await fetch(`${API_BASE}/books/catalog/status`)
-  if (!response.ok) throw new Error('获取目录状态失败')
-  return response.json()
+  const url = `${API_BASE}/books/catalog/status`
+  debugLog('获取目录状态:', url)
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw await handleApiError(response, url, '获取目录状态')
+    }
+    return response.json()
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`获取目录状态失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 刷新目录
 export async function refreshCatalog(): Promise<void> {
-  const response = await fetch(`${API_BASE}/books/catalog/refresh`, { method: 'POST' })
-  if (!response.ok) throw new Error('刷新目录失败')
+  const url = `${API_BASE}/books/catalog/refresh`
+  debugLog('刷新目录:', url)
+
+  try {
+    const response = await fetch(url, { method: 'POST' })
+    if (!response.ok) {
+      throw await handleApiError(response, url, '刷新目录')
+    }
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`刷新目录失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 开始下载 (SSE)
@@ -61,38 +129,54 @@ export async function startDownload(
     error?: string
   }> }) => void
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/download/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ books, outputDir })
-  })
+  const url = `${API_BASE}/download/start`
+  debugLog('开始下载:', url, '书籍数量:', books.length)
 
-  const reader = response.body?.getReader()
-  if (!reader) throw new Error('无法读取响应')
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ books, outputDir })
+    })
 
-  const decoder = new TextDecoder()
+    if (!response.ok) {
+      throw await handleApiError(response, url, '开始下载')
+    }
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法读取响应流')
+    }
 
-    const chunk = decoder.decode(value)
-    const lines = chunk.split('\n')
+    const decoder = new TextDecoder()
 
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        try {
-          const data = JSON.parse(line.slice(6))
-          if (data.type === 'progress') {
-            onProgress(data.bookId, data.progress)
-          } else if (data.type === 'complete') {
-            onComplete(data)
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n')
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6))
+            if (data.type === 'progress') {
+              onProgress(data.bookId, data.progress)
+            } else if (data.type === 'complete') {
+              onComplete(data)
+            }
+          } catch {
+            // 忽略解析错误
           }
-        } catch {
-          // 忽略解析错误
         }
       }
     }
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`下载失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
   }
 }
 
@@ -101,41 +185,61 @@ export async function* chatStream(
   message: string,
   onToken: (token: string) => void
 ): AsyncGenerator<string> {
-  const response = await fetch(`${API_BASE}/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message })
-  })
+  const url = `${API_BASE}/chat`
+  debugLog('AI对话:', url, '消息:', message)
 
-  const reader = response.body?.getReader()
-  if (!reader) throw new Error('无法读取响应')
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    })
 
-  const decoder = new TextDecoder()
-  let fullContent = ''
+    if (!response.ok) {
+      throw await handleApiError(response, url, 'AI对话')
+    }
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法读取响应流')
+    }
 
-    const chunk = decoder.decode(value)
-    const lines = chunk.split('\n')
+    const decoder = new TextDecoder()
+    let fullContent = ''
 
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        try {
-          const data = JSON.parse(line.slice(6))
-          if (data.type === 'token') {
-            onToken(data.content)
-            fullContent += data.content
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value)
+      const lines = chunk.split('\n')
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6))
+            if (data.type === 'token') {
+              onToken(data.content)
+              fullContent += data.content
+            } else if (data.type === 'error') {
+              debugLog('AI对话错误:', data.content)
+              throw new Error(`AI对话错误: ${data.content}`)
+            }
+          } catch (parseErr) {
+            // 忽略解析错误，但记录日志
+            debugLog('SSE解析错误:', line)
           }
-        } catch {
-          // 忽略解析错误
         }
       }
     }
-  }
 
-  yield fullContent
+    yield fullContent
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`AI对话失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 获取配置
@@ -152,19 +256,43 @@ export async function getConfig(): Promise<{
     timeout: number
   }
 }> {
-  const response = await fetch(`${API_BASE}/config`)
-  if (!response.ok) throw new Error('获取配置失败')
-  return response.json()
+  const url = `${API_BASE}/config`
+  debugLog('获取配置:', url)
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw await handleApiError(response, url, '获取配置')
+    }
+    return response.json()
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`获取配置失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 保存配置
 export async function saveConfig(config: unknown): Promise<void> {
-  const response = await fetch(`${API_BASE}/config`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config)
-  })
-  if (!response.ok) throw new Error('保存配置失败')
+  const url = `${API_BASE}/config`
+  debugLog('保存配置:', url, config)
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    })
+    if (!response.ok) {
+      throw await handleApiError(response, url, '保存配置')
+    }
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`保存配置失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // ─── Library API ─────────────────────────────────────────────────────────────
@@ -208,9 +336,21 @@ export interface CategoryGroup {
 // 获取工作区目录下的所有 EPUB 文件（使用索引）
 export async function getLibraryFiles(workspacePath: string): Promise<LibraryFilesResponse> {
   const query = new URLSearchParams({ workspacePath })
-  const response = await fetch(`${API_BASE}/library/files?${query}`)
-  if (!response.ok) throw new Error('获取图书列表失败')
-  return response.json()
+  const url = `${API_BASE}/library/files?${query}`
+  debugLog('获取图书列表:', url)
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw await handleApiError(response, url, '获取图书列表')
+    }
+    return response.json()
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`获取图书列表失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 按分类筛选书籍
@@ -219,9 +359,21 @@ export async function getLibraryBySubject(workspacePath: string): Promise<{
   total: number
 }> {
   const query = new URLSearchParams({ workspacePath })
-  const response = await fetch(`${API_BASE}/library/filter/subject?${query}`)
-  if (!response.ok) throw new Error('获取分类失败')
-  return response.json()
+  const url = `${API_BASE}/library/filter/subject?${query}`
+  debugLog('获取分类:', url)
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw await handleApiError(response, url, '获取分类')
+    }
+    return response.json()
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`获取分类失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 按出版年份筛选书籍
@@ -230,17 +382,41 @@ export async function getLibraryByYear(workspacePath: string): Promise<{
   total: number
 }> {
   const query = new URLSearchParams({ workspacePath })
-  const response = await fetch(`${API_BASE}/library/filter/year?${query}`)
-  if (!response.ok) throw new Error('获取年份分类失败')
-  return response.json()
+  const url = `${API_BASE}/library/filter/year?${query}`
+  debugLog('获取年份分类:', url)
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw await handleApiError(response, url, '获取年份分类')
+    }
+    return response.json()
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`获取年份分类失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 获取单个书籍详情（封面 + 简介，动态读取）
 export async function getBookDetail(filePath: string): Promise<EpubDetail> {
   const query = new URLSearchParams({ filePath })
-  const response = await fetch(`${API_BASE}/library/detail?${query}`)
-  if (!response.ok) throw new Error('获取书籍详情失败')
-  return response.json()
+  const url = `${API_BASE}/library/detail?${query}`
+  debugLog('获取书籍详情:', url)
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw await handleApiError(response, url, '获取书籍详情')
+    }
+    return response.json()
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`获取书籍详情失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }
 
 // 强制重建索引
@@ -250,7 +426,19 @@ export async function reindexLibrary(workspacePath: string): Promise<{
   error?: string
 }> {
   const query = new URLSearchParams({ workspacePath })
-  const response = await fetch(`${API_BASE}/library/reindex?${query}`, { method: 'POST' })
-  if (!response.ok) throw new Error('重建索引失败')
-  return response.json()
+  const url = `${API_BASE}/library/reindex?${query}`
+  debugLog('重建索引:', url)
+
+  try {
+    const response = await fetch(url, { method: 'POST' })
+    if (!response.ok) {
+      throw await handleApiError(response, url, '重建索引')
+    }
+    return response.json()
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`重建索引失败：无法连接到后端服务器\nURL: ${url}\nAPI_BASE: ${API_BASE}`)
+    }
+    throw err
+  }
 }

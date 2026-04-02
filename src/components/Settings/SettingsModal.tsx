@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Modal, Form, Input, AutoComplete, InputNumber, Button, Space, Divider, message, Tag, Switch, Row, Col, Segmented } from 'antd'
-import { SettingOutlined, SaveOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, MoonOutlined, LockOutlined, EditOutlined } from '@ant-design/icons'
+import { SettingOutlined, SaveOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, MoonOutlined, LockOutlined, EditOutlined, BugOutlined } from '@ant-design/icons'
 import { useTheme } from '../../contexts/ThemeContext'
 
 interface SettingsModalProps {
@@ -24,6 +24,7 @@ interface DownloadConfig {
 interface Config {
   llm: LLMConfig
   download: DownloadConfig
+  debugMode?: boolean
 }
 
 const LLM_MODELS = [
@@ -59,7 +60,8 @@ const DEFAULT_CONFIG: Config = {
   download: {
     concurrent: 3,
     timeout: 30
-  }
+  },
+  debugMode: false
 }
 
 // API_BASE 与 api.ts 保持一致
@@ -102,19 +104,21 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           download: {
             ...DEFAULT_CONFIG.download,
             ...config.download
-          }
+          },
+          debugMode: config.debugMode ?? false
         })
       } else {
         setLlmMode('preset')
         form.setFieldsValue({
           llm: PRESET_LLM,
-          download: DEFAULT_CONFIG.download
+          download: DEFAULT_CONFIG.download,
+          debugMode: false
         })
       }
     } catch (error) {
       console.error('加载配置失败:', error)
       setLlmMode('preset')
-      form.setFieldsValue({ llm: PRESET_LLM, download: DEFAULT_CONFIG.download })
+      form.setFieldsValue({ llm: PRESET_LLM, download: DEFAULT_CONFIG.download, debugMode: false })
     }
   }
 
@@ -218,7 +222,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             外观
           </div>
-          <Row align="middle" justify="space-between">
+          <Row align="middle" justify="space-between" style={{ marginBottom: 12 }}>
             <Col>
               <Space>
                 <MoonOutlined style={{ color: 'var(--text-secondary)' }} />
@@ -234,6 +238,22 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               />
             </Col>
           </Row>
+          <Form.Item name="debugMode" valuePropName="checked" style={{ marginBottom: 0 }}>
+            <Row align="middle" justify="space-between">
+              <Col>
+                <Space>
+                  <BugOutlined style={{ color: 'var(--text-secondary)' }} />
+                  <span>调试模式</span>
+                </Space>
+              </Col>
+              <Col>
+                <Switch
+                  checkedChildren="开"
+                  unCheckedChildren="关"
+                />
+              </Col>
+            </Row>
+          </Form.Item>
         </div>
 
         <Divider style={{ margin: '16px 0 20px' }} />

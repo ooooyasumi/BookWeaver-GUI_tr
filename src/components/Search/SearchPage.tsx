@@ -1,8 +1,15 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Input, Button, Space, message, Checkbox, Drawer, Card, Segmented } from 'antd'
 import { SearchOutlined, MessageOutlined, SendOutlined, PlusOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookList } from '../Common/BookList'
+
+// API 地址配置
+// 开发模式：/api（由 Vite dev server proxy 转发到 8765）
+// 打包后：file:// 协议，必须用绝对地址直连后端
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://127.0.0.1:8765/api'
+  : '/api'
 
 // 搜索类型
 type SearchType = 'title' | 'author' | 'subject' | 'year'
@@ -52,6 +59,30 @@ export function SearchPage() {
   const [aiInput, setAiInput] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
 
+  // 调试信息状态
+  const [debugInfo, setDebugInfo] = useState<string>('')
+  const [lastError, setLastError] = useState<string>('')
+  const [debugMode, setDebugMode] = useState(false)
+
+  // 加载调试模式配置
+  useEffect(() => {
+    const loadDebugMode = async () => {
+      try {
+        const config = await window.electronAPI.getConfig()
+        setDebugMode(config?.debugMode ?? false)
+      } catch {
+        setDebugMode(false)
+      }
+    }
+    loadDebugMode()
+  }, [])
+
+  // 更新调试信息
+  const updateDebugInfo = (info: string) => {
+    setDebugInfo(info)
+    console.log('[Debug]', info)
+  }
+
   // 搜索书籍
   const handleSearch = async () => {
     if (!searchText.trim()) {
@@ -60,6 +91,9 @@ export function SearchPage() {
     }
 
     setLoading(true)
+    setLastError('')
+    updateDebugInfo(`开始搜索...\n协议: ${window.location.protocol}\nAPI_BASE: ${API_BASE}`)
+
     try {
       // 根据搜索类型构建查询参数
       const params = new URLSearchParams()
@@ -86,13 +120,61 @@ export function SearchPage() {
           break
       }
 
-      const response = await fetch(`/api/books/search?${params.toString()}`)
-      const data = await response.json()
+      const url = `${API_BASE}/books/search?${params.toString()}`
+      updateDebugInfo(`请求URL: ${url}\n正在发送请求...`)
+
+      let response: Response
+      try {
+        response = await fetch(url)
+      } catch (fetchError) {
+        const errorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError)
+        const fullError = `Fetch失败: ${errorMsg}\nURL: ${url}\nAPI_BASE: ${API_BASE}\n协议: ${window.location.protocol}`
+        updateDebugInfo(fullError)
+        setLastError(fullError)
+        message.error({ content: `网络请求失败\n${fullError}`, duration: 15 })
+        setLoading(false)
+        return
+      }
+
+      updateDebugInfo(`收到响应: HTTP ${response.status} ${response.statusText}`)
+
+      if (!response.ok) {
+        let errorText = ''
+        try {
+          errorText = await response.text()
+        } catch {
+          errorText = '无法读取响应内容'
+        }
+        const fullError = `HTTP ${response.status} ${response.statusText}\nURL: ${url}\n响应: ${errorText}`
+        updateDebugInfo(fullError)
+        setLastError(fullError)
+        message.error({ content: `搜索失败\n${fullError}`, duration: 15 })
+        setLoading(false)
+        return
+      }
+
+      let data
+      try {
+        data = await response.json()
+      } catch (jsonError) {
+        const errorMsg = jsonError instanceof Error ? jsonError.message : String(jsonError)
+        const fullError = `JSON解析失败: ${errorMsg}`
+        updateDebugInfo(fullError)
+        setLastError(fullError)
+        message.error({ content: fullError, duration: 15 })
+        setLoading(false)
+        return
+      }
+
+      updateDebugInfo(`成功! 返回 ${data.results?.length || 0} 条结果`)
       setSearchResults(data.results || [])
       clearSearchResultSelection()
     } catch (error) {
-      message.error('搜索失败')
-      console.error(error)
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      const fullError = `未知错误: ${errorMsg}`
+      updateDebugInfo(fullError)
+      setLastError(fullError)
+      message.error({ content: fullError, duration: 15 })
     } finally {
       setLoading(false)
     }
@@ -147,7 +229,14 @@ export function SearchPage() {
         return
       }
 
-      const response = await fetch('/api/chat', {
+      const url = `${API_BASE}/chat`
+
+      // 显示调试信息
+      console.log('[AI Debug] API_BASE:', API_BASE)
+      console.log('[AI Debug] URL:', url)
+      console.log('[AI Debug] Protocol:', window.location.protocol)
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,8 +246,17 @@ export function SearchPage() {
         })
       })
 
+      console.log('[AI Debug] Response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('请求失败')
+        const errorText = await response.text()
+        message.error({
+          content: `AI 对话失败 (HTTP ${response.status})\nURL: ${url}\nAPI_BASE: ${API_BASE}\n协议: ${window.location.protocol}\n响应: ${errorText || '无内容'}`,
+          duration: 10
+        })
+        setAiMessages(prev => [...prev, { role: 'assistant', content: `对话失败: HTTP ${response.status}\n${errorText}` }])
+        setAiLoading(false)
+        return
       }
 
       const reader = response.body?.getReader()
@@ -284,9 +382,14 @@ export function SearchPage() {
         }
       }
     } catch (error) {
-      message.error('AI 对话失败')
-      console.error(error)
-      setAiMessages(prev => [...prev, { role: 'assistant', content: '对话失败，请检查网络连接和配置' }])
+      // 网络错误或其他错误
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      message.error({
+        content: `AI 对话失败：网络错误\nAPI_BASE: ${API_BASE}\n协议: ${window.location.protocol}\n错误: ${errorMsg}\n\n请检查后端是否启动 (127.0.0.1:8765)`,
+        duration: 10
+      })
+      console.error('[AI Error]', error)
+      setAiMessages(prev => [...prev, { role: 'assistant', content: `对话失败：网络错误\n${errorMsg}` }])
     } finally {
       setAiLoading(false)
     }
@@ -294,6 +397,35 @@ export function SearchPage() {
 
   return (
     <div>
+      {/* 调试面板 - 根据调试模式显示 */}
+      {debugMode && (
+        <Card className="card" style={{ marginBottom: 16, backgroundColor: '#1a1a1a', border: '1px solid #333' }}>
+          <div style={{ fontFamily: 'monospace', fontSize: 12, color: '#00ff00' }}>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ color: '#888' }}>协议:</span> {window.location.protocol}
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ color: '#888' }}>API_BASE:</span> {API_BASE}
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ color: '#888' }}>后端地址:</span> http://127.0.0.1:8765
+            </div>
+            {debugInfo && (
+              <div style={{ marginTop: 12, padding: 8, backgroundColor: '#222', borderRadius: 4, whiteSpace: 'pre-wrap' }}>
+                <span style={{ color: '#888' }}>调试信息:</span>
+                <div>{debugInfo}</div>
+              </div>
+            )}
+            {lastError && (
+              <div style={{ marginTop: 12, padding: 8, backgroundColor: '#400', borderRadius: 4, whiteSpace: 'pre-wrap', color: '#ff6666' }}>
+                <span style={{ color: '#ff9999' }}>错误:</span>
+                <div>{lastError}</div>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* 搜索卡片 */}
       <Card className="card" style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
