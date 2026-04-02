@@ -24,7 +24,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11.9'
 
       - name: Install frontend dependencies
         run: npm ci
@@ -37,11 +37,36 @@ jobs:
       - name: Build backend (PyInstaller)
         run: npm run build:backend
 
+      - name: Verify backend build
+        run: |
+          echo "=== Checking dist-backend directory ==="
+          ls -la dist-backend/ || (echo "ERROR: dist-backend directory not found!" && exit 1)
+          echo "=== Backend file info ==="
+          file dist-backend/bookweaver-backend || (echo "ERROR: Backend file not found!" && exit 1)
+          echo "=== Backend file size ==="
+          du -h dist-backend/bookweaver-backend
+          echo "=== Testing backend executable ==="
+          ./dist-backend/bookweaver-backend --help || echo "Warning: Backend --help failed, but continuing..."
+
       - name: Build frontend
         run: npm run build:frontend
 
       - name: Build Electron app (no publish)
         run: npm run package:mac -- --publish never
+
+      - name: Verify final package
+        run: |
+          echo "=== Checking release directory ==="
+          ls -la release/ || (echo "ERROR: release directory not found!" && exit 1)
+          echo "=== DMG file size ==="
+          du -h release/*.dmg
+          echo "=== Checking app bundle structure ==="
+          ls -la release/mac-arm64/BookWeaver.app/Contents/ || (echo "ERROR: App bundle structure invalid!" && exit 1)
+          echo "=== Checking backend in resources ==="
+          ls -la release/mac-arm64/BookWeaver.app/Contents/resources/backend/ || (echo "ERROR: Backend not found in resources!" && exit 1)
+          echo "=== Backend file in app ==="
+          file release/mac-arm64/BookWeaver.app/Contents/resources/backend/bookweaver-backend || (echo "ERROR: Backend file not found!" && exit 1)
+          du -h release/mac-arm64/BookWeaver.app/Contents/resources/backend/bookweaver-backend
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -65,7 +90,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11.9'
 
       - name: Install frontend dependencies
         run: npm ci
@@ -78,11 +103,33 @@ jobs:
       - name: Build backend (PyInstaller)
         run: npm run build:backend
 
+      - name: Verify backend build
+        shell: bash
+        run: |
+          echo "=== Checking dist-backend directory ==="
+          ls -la dist-backend/ || (echo "ERROR: dist-backend directory not found!" && exit 1)
+          echo "=== Backend file info ==="
+          file dist-backend/bookweaver-backend.exe || (echo "ERROR: Backend file not found!" && exit 1)
+          echo "=== Backend file size ==="
+          du -h dist-backend/bookweaver-backend.exe
+
       - name: Build frontend
         run: npm run build:frontend
 
       - name: Build Electron app (no publish)
         run: npm run package:win -- --publish never
+
+      - name: Verify final package
+        shell: bash
+        run: |
+          echo "=== Checking release directory ==="
+          ls -la release/ || (echo "ERROR: release directory not found!" && exit 1)
+          echo "=== EXE file size ==="
+          du -h release/*.exe
+          echo "=== Checking backend in resources ==="
+          ls -la release/win-unpacked/resources/backend/ || ls -la release/windows-arm64/resources/backend/ || (echo "ERROR: Backend not found in resources!" && exit 1)
+          echo "=== Backend file in app ==="
+          file release/win-unpacked/resources/backend/bookweaver-backend.exe || file release/windows-arm64/resources/backend/bookweaver-backend.exe || (echo "ERROR: Backend file not found!" && exit 1)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
