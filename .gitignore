@@ -17,6 +17,10 @@ release/
 *.egg-info/
 .eggs/
 
+# PyInstaller build artifacts
+build/
+*.spec
+
 # IDE
 .idea/
 .vscode/

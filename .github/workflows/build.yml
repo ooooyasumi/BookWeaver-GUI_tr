@@ -34,16 +34,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Build frontend and Electron
-        run: npm run build:frontend
+      - name: Build backend (PyInstaller)
+        run: npm run build:backend
 
-      - name: Prepare Python embed package
-        run: |
-          mkdir -p python-embed/lib
-          pip install -r backend/requirements.txt --target ./python-embed/lib/python3.11/site-packages
-          echo '#!/bin/bash
-          exec python3 "$@"' > python-embed/python3
-          chmod +x python-embed/python3
+      - name: Build frontend
+        run: npm run build:frontend
 
       - name: Build Electron app (no publish)
         run: npm run package:mac -- --publish never
@@ -75,18 +70,15 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Download Python embeddable package
-        run: |
-          Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.11.8/python-3.11.8-embed-amd64.zip" -OutFile "python-embed.zip"
-          Expand-Archive python-embed.zip -DestinationPath python-embed
-        shell: powershell
-
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt --target ./python-embed/Lib/site-packages
+          pip install -r backend/requirements.txt
 
-      - name: Build frontend and Electron
+      - name: Build backend (PyInstaller)
+        run: npm run build:backend
+
+      - name: Build frontend
         run: npm run build:frontend
 
       - name: Build Electron app (no publish)
