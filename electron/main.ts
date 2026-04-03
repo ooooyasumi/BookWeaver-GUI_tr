@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, globalShortcut } from 'electron'
 import path from 'path'
+import fs from 'fs'
 import { spawn, ChildProcess } from 'child_process'
 import { WorkspaceManager, AppState, BatchMeta } from './workspace'
 
@@ -47,33 +48,109 @@ function createWindow() {
   })
 }
 
-function startPythonBackend() {
-  if (isDev) {
-    console.log('开发模式：请手动启动后端 (python dev.py)')
-    return
+function startPythonBackend(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (isDev) {
+      console.log('开发模式：请手动启动后端 (python dev.py)')
+      resolve(true)
+      return
+    }
+
+    // 生产模式：启动 PyInstaller 打包的后端可执行文件
+    const resourcesPath = process.resourcesPath
+    const backendExe = process.platform === 'win32'
+      ? path.join(resourcesPath, 'backend', 'bookweaver-backend.exe')
+      : path.join(resourcesPath, 'backend', 'bookweaver-backend')
+
+    // 检查后端可执行文件是否存在
+    if (!fs.existsSync(backendExe)) {
+      console.error('后端文件不存在:', backendExe)
+      resolve(false)
+      return
+    }
+
+    console.log('启动后端:', backendExe)
+
+    pythonProcess = spawn(backendExe, [
+      '--host', '127.0.0.1',
+      '--port', '8765'
+    ], {
+      // Windows 打包后没有控制台，用 pipe 避免 inherit 挂起
+      stdio: ['ignore', 'pipe', 'pipe'],
+      // Windows 需要 detached: false 确保子进程随主进程退出
+      windowsHide: true,
+    })
+
+    // 收集日志输出
+    pythonProcess.stdout?.on('data', (data: Buffer) => {
+      console.log('[Backend]', data.toString().trim())
+    })
+    pythonProcess.stderr?.on('data', (data: Buffer) => {
+      console.error('[Backend Error]', data.toString().trim())
+    })
+
+    pythonProcess.on('error', (err) => {
+      console.error('Python 后端启动失败:', err)
+      resolve(false)
+    })
+
+    pythonProcess.on('exit', (code) => {
+      console.log('Python 后端退出, code:', code)
+      pythonProcess = null
+    })
+
+    // 轮询健康检查，等待后端就绪
+    waitForBackend(30).then(resolve)
+  })
+}
+
+async function waitForBackend(maxSeconds: number): Promise<boolean> {
+  const { net } = await import('electron')
+  const startTime = Date.now()
+
+  while (Date.now() - startTime < maxSeconds * 1000) {
+    try {
+      const ok = await new Promise<boolean>((resolve) => {
+        const request = net.request('http://127.0.0.1:8765/api/health')
+        request.on('response', (response) => {
+          resolve(response.statusCode === 200)
+        })
+        request.on('error', () => resolve(false))
+        request.end()
+      })
+      if (ok) {
+        console.log('后端就绪')
+        return true
+      }
+    } catch {
+      // 忽略连接错误
+    }
+
+    // 如果进程已退出则放弃
+    if (!pythonProcess) {
+      console.error('后端进程已退出')
+      return false
+    }
+
+    await new Promise(r => setTimeout(r, 500))
   }
 
-  // 生产模式：启动 PyInstaller 打包的后端可执行文件
-  const resourcesPath = process.resourcesPath
-  const backendExe = process.platform === 'win32'
-    ? path.join(resourcesPath, 'backend', 'bookweaver-backend.exe')
-    : path.join(resourcesPath, 'backend', 'bookweaver-backend')
-
-  pythonProcess = spawn(backendExe, [
-    '--host', '127.0.0.1',
-    '--port', '8765'
-  ], {
-    stdio: 'inherit'
-  })
-
-  pythonProcess.on('error', (err) => {
-    console.error('Python 后端启动失败:', err)
-  })
+  console.error('等待后端超时')
+  return false
 }
 
 function stopPythonBackend() {
   if (pythonProcess) {
-    pythonProcess.kill()
+    // Windows 上 kill() 默认发 SIGTERM，需要用 taskkill 强制终止
+    if (process.platform === 'win32') {
+      try {
+        spawn('taskkill', ['/pid', String(pythonProcess.pid), '/f', '/t'], { windowsHide: true })
+      } catch {
+        pythonProcess.kill()
+      }
+    } else {
+      pythonProcess.kill()
+    }
     pythonProcess = null
   }
 }
@@ -147,8 +224,12 @@ ipcMain.handle('shell:openPath', async (_event, targetPath: string) => {
 
 // ─── App lifecycle ───────────────────────────────────────────────────────────
 
-app.whenReady().then(() => {
-  startPythonBackend()
+app.whenReady().then(async () => {
+  const backendOk = await startPythonBackend()
+  if (!backendOk && !isDev) {
+    dialog.showErrorBox('BookWeaver', '后端服务启动失败，请检查安装是否完整。')
+  }
+
   createWindow()
 
   app.on('activate', () => {
