@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, Button, Space, Checkbox, message, Spin, Progress, Slider, Typography } from 'antd'
-import { PictureOutlined, SyncOutlined, StopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { PictureOutlined, SyncOutlined, StopOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
 
@@ -52,11 +52,13 @@ function CoverCard({
   selected,
   onToggle,
   colWidth,
+  thumbLoading,
 }: {
   book: CoverFileInfo
   selected: boolean
   onToggle: () => void
   colWidth: number
+  thumbLoading?: boolean
 }) {
   const coverSrc = book.coverBase64
     ? `data:${book.coverMediaType || 'image/jpeg'};base64,${book.coverBase64}`
@@ -93,6 +95,8 @@ function CoverCard({
             alt={book.title || ''}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
+        ) : thumbLoading ? (
+          <LoadingOutlined style={{ fontSize: 28, color: 'var(--text-quaternary)' }} />
         ) : (
           <PictureOutlined style={{ fontSize: 36, color: 'var(--text-tertiary)' }} />
         )}
@@ -156,6 +160,8 @@ export function CoverPage() {
 
   const [status, setStatus] = useState<CoverStatus | null>(null)
   const [loading, setLoading] = useState(true)
+  const [statusError, setStatusError] = useState<string | null>(null)
+  const [thumbLoading, setThumbLoading] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [progress, setProgress] = useState<UpdateProgress | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -165,28 +171,91 @@ export function CoverPage() {
   // 合并全部文件（未更新在前）
   const allBooks = status ? [...status.notUpdatedFiles, ...status.updatedFiles] : []
 
-  // ── 加载状态 ────────────────────────────────────────────────────────────
+  // ── 加载缩略图（独立请求）──────────────────────────────────────────────
 
-  const loadStatus = async () => {
+  const loadThumbnails = useCallback(async (filePaths: string[]) => {
+    if (!workspacePath || filePaths.length === 0) return
+    setThumbLoading(true)
+    try {
+      const response = await fetch(`${API_BASE}/cover/thumbnails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspacePath, filePaths }),
+      })
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        const detail = errData.detail || `HTTP ${response.status}`
+        console.error('[Cover] 缩略图加载失败:', detail)
+        message.warning(`封面缩略图加载失败: ${detail}`, 6)
+        return
+      }
+      const data = await response.json()
+      const thumbnails = data.thumbnails || {}
+
+      // 合并缩略图到 status
+      setStatus(prev => {
+        if (!prev) return prev
+        const mergeThumbs = (list: CoverFileInfo[]) =>
+          list.map(b => {
+            const t = thumbnails[b.filePath]
+            return t ? { ...b, coverBase64: t.base64, coverMediaType: t.mediaType } : b
+          })
+        return {
+          ...prev,
+          notUpdatedFiles: mergeThumbs(prev.notUpdatedFiles),
+          updatedFiles: mergeThumbs(prev.updatedFiles),
+        }
+      })
+    } catch (error: any) {
+      console.error('[Cover] 缩略图请求异常:', error)
+      message.warning(`封面缩略图请求失败: ${error?.message || '网络错误'}`, 6)
+    } finally {
+      setThumbLoading(false)
+    }
+  }, [workspacePath])
+
+  // ── 加载状态（轻量，不含缩略图）──────────────────────────────────────────
+
+  const loadStatus = useCallback(async () => {
     if (!workspacePath) return
     setLoading(true)
+    setStatusError(null)
     try {
       const query = new URLSearchParams({ workspacePath })
       const response = await fetch(`${API_BASE}/cover/status?${query}`)
-      if (!response.ok) throw new Error('Failed to load status')
-      const data = await response.json()
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        const detail = errData.detail || `HTTP ${response.status}`
+        throw new Error(detail)
+      }
+      const data: CoverStatus = await response.json()
       setStatus(data)
-    } catch (error) {
-      console.error('Cover load status error:', error)
-      message.error('加载封面状态失败')
+
+      // 状态加载成功后，异步加载缩略图
+      const allPaths = [
+        ...data.notUpdatedFiles.map(f => f.filePath),
+        ...data.updatedFiles.map(f => f.filePath),
+      ]
+      if (allPaths.length > 0) {
+        // 不 await，让页面先渲染
+        loadThumbnails(allPaths)
+      }
+    } catch (error: any) {
+      const errMsg = error?.message || '未知错误'
+      console.error('[Cover] 状态加载失败:', errMsg)
+      setStatusError(errMsg)
+      message.error({
+        content: `加载封面状态失败: ${errMsg}`,
+        duration: 8,
+      })
     } finally {
       setLoading(false)
     }
-  }
+  }, [workspacePath, loadThumbnails])
 
   useEffect(() => {
     loadStatus()
-  }, [workspacePath])
+  }, [loadStatus])
 
   // ── 选择逻辑 ────────────────────────────────────────────────────────────
 
@@ -242,6 +311,11 @@ export function CoverPage() {
         signal: controller.signal,
       })
 
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        throw new Error(errData.detail || `HTTP ${response.status}`)
+      }
+
       const reader = response.body?.getReader()
       if (!reader) throw new Error('No response body')
 
@@ -278,7 +352,17 @@ export function CoverPage() {
                 })
               }
 
+              if (data.type === 'error') {
+                message.error(`封面更新出错: ${data.message || '未知错误'}`, 6)
+              }
+
               if (data.type === 'done') {
+                const msg = `封面更新完成: 成功 ${data.success || 0}, 失败 ${data.failed || 0}`
+                if (data.failed > 0) {
+                  message.warning(msg, 5)
+                } else {
+                  message.success(msg, 3)
+                }
                 setTimeout(() => {
                   loadStatus()
                   setUpdating(false)
@@ -286,7 +370,7 @@ export function CoverPage() {
                   setAbortController(null)
                 }, 500)
               }
-            } catch { /* ignore */ }
+            } catch { /* ignore parse error */ }
           }
         }
       }
@@ -294,8 +378,9 @@ export function CoverPage() {
       if (error?.name === 'AbortError') {
         message.info('更新已取消')
       } else {
-        console.error('Cover update error:', error)
-        message.error('更新封面失败')
+        const errMsg = error?.message || '未知错误'
+        console.error('[Cover] 更新失败:', errMsg)
+        message.error(`更新封面失败: ${errMsg}`, 6)
       }
       setUpdating(false)
       setProgress(null)
@@ -319,8 +404,9 @@ export function CoverPage() {
         abortController.abort()
         setAbortController(null)
       }
-    } catch (error) {
-      console.error('Cancel error:', error)
+    } catch (error: any) {
+      console.error('[Cover] 取消失败:', error)
+      message.error(`取消请求失败: ${error?.message || '网络错误'}`)
     }
   }
 
@@ -328,12 +414,16 @@ export function CoverPage() {
     if (!workspacePath) return
     try {
       const query = new URLSearchParams({ workspacePath })
-      await fetch(`${API_BASE}/cover/reset-status?${query}`, { method: 'POST' })
+      const resp = await fetch(`${API_BASE}/cover/reset-status?${query}`, { method: 'POST' })
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}))
+        throw new Error(errData.detail || `HTTP ${resp.status}`)
+      }
       message.success('已重置所有封面状态')
       loadStatus()
-    } catch (error) {
-      console.error('Reset error:', error)
-      message.error('重置失败')
+    } catch (error: any) {
+      console.error('[Cover] 重置失败:', error)
+      message.error(`重置失败: ${error?.message || '未知错误'}`)
     }
   }
 
@@ -343,6 +433,26 @@ export function CoverPage() {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
         <Spin size="large" />
+      </div>
+    )
+  }
+
+  // 状态加载失败时显示错误详情 + 重试按钮
+  if (statusError) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 400, gap: 16 }}>
+        <CloseCircleOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />
+        <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-primary)' }}>加载封面状态失败</div>
+        <div style={{
+          fontSize: 13, color: 'var(--text-tertiary)', maxWidth: 500, textAlign: 'center',
+          padding: '8px 16px', background: 'var(--bg-tertiary)', borderRadius: 8,
+          wordBreak: 'break-all',
+        }}>
+          {statusError}
+        </div>
+        <Button type="primary" icon={<SyncOutlined />} onClick={loadStatus}>
+          重试
+        </Button>
       </div>
     )
   }
@@ -366,6 +476,12 @@ export function CoverPage() {
               <span style={{ color: 'var(--text-secondary)' }}>未更新：</span>
               <span style={{ fontSize: 20, fontWeight: 600, color: '#faad14' }}>{status?.notUpdated || 0}</span>
             </div>
+            {thumbLoading && (
+              <div>
+                <LoadingOutlined style={{ marginRight: 4 }} />
+                <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>加载封面中...</span>
+              </div>
+            )}
           </Space>
 
           <Space>
@@ -447,6 +563,7 @@ export function CoverPage() {
                 selected={selected.has(book.filePath)}
                 onToggle={() => toggleSelection(book.filePath)}
                 colWidth={colWidthCalc as any}
+                thumbLoading={thumbLoading && !book.coverBase64}
               />
             ))}
           </div>

@@ -71,6 +71,17 @@ def build():
         "--hidden-import", "certifi",
         "--hidden-import", "httpx._transports",
         "--hidden-import", "httpx._transports.default",
+        # lxml C 扩展（ebooklib 依赖，Windows 需显式声明）
+        "--hidden-import", "lxml",
+        "--hidden-import", "lxml.etree",
+        "--hidden-import", "lxml._elementpath",
+        "--hidden-import", "lxml.html",
+        # ebooklib
+        "--hidden-import", "ebooklib",
+        "--hidden-import", "ebooklib.epub",
+        "--hidden-import", "ebooklib.utils",
+        # 收集 certifi 的 CA 证书文件
+        "--collect-data", "certifi",
         # Entry file
         "main.py",
     ]
