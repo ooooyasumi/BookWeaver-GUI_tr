@@ -377,8 +377,7 @@ def get_upload_status(workspace_path: str) -> Dict[str, Any]:
     """
     获取上传状态
 
-    从索引中筛选 metadataUpdated=true 的文件，
-    结合上传进度记录，区分可上传/已上传/失败。
+    从索引中获取所有文件，结合上传进度记录，区分可上传/已上传/失败。
     """
     from .metadata_updater import load_index
 
@@ -395,10 +394,6 @@ def get_upload_status(workspace_path: str) -> Dict[str, Any]:
 
     files = index_data.get("files", {})
     for file_path, file_info in files.items():
-        # 只处理已更新元数据的文件
-        if not file_info.get("metadataUpdated", False):
-            continue
-
         file_data = {
             "filePath": file_path,
             "title": file_info.get("title"),
