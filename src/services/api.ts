@@ -308,6 +308,10 @@ export interface EpubMetadata {
   publishYear: number | null
   error: string | null
   relativePath?: string
+  metadataUpdated?: boolean
+  coverUpdated?: boolean
+  coverError?: string | null
+  uploaded?: boolean
 }
 
 export interface EpubDetail {

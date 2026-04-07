@@ -6,6 +6,7 @@ import { SearchPage } from '../Search/SearchPage'
 import { DownloadPage } from '../Download/DownloadPage'
 import { LibraryPage } from '../Library/LibraryPage'
 import { MetadataPage } from '../Metadata/MetadataPage'
+import { CoverPage } from '../Cover/CoverPage'
 import { UploadPage } from '../Upload/UploadPage'
 import { SettingsModal } from '../Settings/SettingsModal'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
@@ -28,6 +29,8 @@ export function AppLayout() {
         return <LibraryPage />
       case 'metadata':
         return <MetadataPage />
+      case 'cover':
+        return <CoverPage />
       case 'upload':
         return <UploadPage />
       default:

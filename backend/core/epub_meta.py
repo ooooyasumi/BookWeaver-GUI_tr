@@ -274,6 +274,10 @@ def build_index(workspace_path: str) -> Dict[str, Any]:
             "metadataUpdated": existing_meta.get("metadataUpdated", False),
             "metadataUpdatedAt": existing_meta.get("metadataUpdatedAt"),
             "metadataError": existing_meta.get("metadataError"),
+            # 封面管理状态
+            "coverUpdated": existing_meta.get("coverUpdated", False),
+            "coverUpdatedAt": existing_meta.get("coverUpdatedAt"),
+            "coverError": existing_meta.get("coverError"),
         }
 
     # 写入索引文件
@@ -362,6 +366,10 @@ def get_or_build_index(workspace_path: str) -> Dict[str, Any]:
             "metadataUpdated": existing_meta.get("metadataUpdated", False),
             "metadataUpdatedAt": existing_meta.get("metadataUpdatedAt"),
             "metadataError": existing_meta.get("metadataError"),
+            # 保留已有的封面管理状态
+            "coverUpdated": existing_meta.get("coverUpdated", False),
+            "coverUpdatedAt": existing_meta.get("coverUpdatedAt"),
+            "coverError": existing_meta.get("coverError"),
         }
 
     existing["files"] = indexed

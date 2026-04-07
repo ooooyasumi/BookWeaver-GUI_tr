@@ -22,7 +22,7 @@
 
 ### 版本信息
 
-- **当前版本**: v0.4.0
+- **当前版本**: v0.5.0
 - **Node.js 要求**: 18+
 - **Python 要求**: 3.9+
 - **许可证**: MIT
@@ -37,6 +37,7 @@
 | AI 助手 | 自然语言交互，Plan-Execute-Verify-Reply 四阶段 Harness |
 | 图书管理 | 浏览已下载 EPUB、封面/简介/分类/年份展示、索引缓存 |
 | 元数据管理 | LLM 批量更新 EPUB 元数据（简介/分类/出版年份），SSE 实时进度 |
+| 封面管理 | Google Books + Open Library 双源搜索封面，批量替换 EPUB 封面，网格卡片展示，SSE 实时进度 |
 | 书籍上传 | 批量上传 EPUB 到云控平台，支持多环境选择、实时进度、失败重试、持久化记录 |
 
 ### 技术栈
@@ -145,8 +146,9 @@ bookweaver-gui/
 │   │   ├── Download/        # 下载组件
 │   │   ├── Library/         # 图书管理组件
 │   │   ├── Metadata/        # 元数据管理组件
+│   │   ├── Cover/           # 封面管理组件
 │   │   ├── Upload/          # 书籍上传组件
-│   │   ├── Common/          # 公共组件（BookDetailDrawer 等）
+│   │   ├── Common/          # 公共组件（BookDetailDrawer、BookStatusIcons 等）
 │   │   └── Settings/        # 设置组件
 │   ├── services/            # API 调用
 │   │   └── api.ts
@@ -164,6 +166,7 @@ bookweaver-gui/
 │   │   ├── library.py       # 图书管理 API
 │   │   ├── metadata.py      # 元数据管理 API
 │   │   ├── upload.py        # 书籍上传 API
+│   │   ├── cover.py         # 封面管理 API
 │   │   └── workspace.py     # 工作区 API
 │   ├── core/                # 核心模块
 │   │   ├── catalog.py       # 目录处理
@@ -172,7 +175,8 @@ bookweaver-gui/
 │   │   ├── epub_meta.py     # EPUB 元数据解析与索引
 │   │   ├── llm_harness.py   # LLM 调用封装（元数据批量查询）
 │   │   ├── metadata_updater.py  # 元数据更新器
-│   │   └── book_uploader.py     # 书籍上传器（OSS + 云控平台 API）
+│   │   ├── book_uploader.py     # 书籍上传器（OSS + 云控平台 API）
+│   │   └── cover_manager.py     # 封面管理器（Google Books + Open Library 搜索、EPUB 封面替换）
 │   └── requirements.txt     # Python 依赖
 │
 ├── dist-backend/            # 打包后的后端可执行文件（PyInstaller 输出）
@@ -611,13 +615,26 @@ npx tsc --noEmit
 
 | 序号 | 操作 | 说明 |
 |------|------|------|
-| 1 | 更新 CHANGELOG.md | 记录本次版本的更新内容 |
-| 2 | 更新 README.md | 如有需要（新功能、安装方式变化等）|
-| 3 | 更新 DOCUMENT.md | 如有需要（架构变化、新增模块等）|
-| 4 | git commit | 提交所有更改 |
-| 5 | git push | 推送到 main 分支 |
-| 6 | 创建并推送 git tag | 如 `v0.2.2`，触发 CI/CD |
-| 7 | CI/CD 自动构建 | GitHub Actions 自动打包发布 |
+| 1 | 更新版本号 | 修改下表中所有版本显示位置 |
+| 2 | 更新 CHANGELOG.md | 记录本次版本的更新内容 |
+| 3 | 更新 README.md | 如有需要（新功能、安装方式变化等）|
+| 4 | 更新 DOCUMENT.md | 如有需要（架构变化、新增模块等），包括顶部"当前版本"字段 |
+| 5 | git commit | 提交所有更改 |
+| 6 | git push | 推送到 main 分支 |
+| 7 | 创建并推送 git tag | 如 `v0.5.0`，触发 CI/CD |
+| 8 | CI/CD 自动构建 | GitHub Actions 自动打包发布 |
+
+#### 版本显示位置（全部需同步更新）
+
+| 文件 | 位置 | 说明 |
+|------|------|------|
+| `package.json` | `"version": "x.x.x"` | npm 版本号，electron-builder 读取此值生成安装包文件名 |
+| `src/components/Layout/Sidebar.tsx` | 侧边栏左下角版本号文字 | 用户在应用内看到的版本 |
+| `src/components/Layout/WelcomePage.tsx` | 欢迎页标题（如有版本显示）| 主页标题处版本显示 |
+| `DOCUMENT/DOCUMENT.md` | 顶部"当前版本"字段 | 文档中的版本记录 |
+| `electron-builder.yml` | `artifactName`（如配置了）| CI/CD 打包输出文件名后缀 |
+
+**关键**: `package.json` 中的 `version` 字段决定了 CI/CD 打包输出的文件名（electron-builder 默认使用 `${productName}-${version}.${ext}` 格式），务必与 git tag 版本一致。
 
 #### 版本号规则
 

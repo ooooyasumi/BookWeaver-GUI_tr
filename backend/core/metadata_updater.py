@@ -127,6 +127,14 @@ def get_metadata_status(workspace_path: str) -> dict:
 
     files = index_data.get("files", {})
 
+    # 加载上传状态
+    try:
+        from .book_uploader import load_upload_progress
+        upload_progress = load_upload_progress(workspace_path)
+        uploaded_map = upload_progress.get("uploaded", {})
+    except Exception:
+        uploaded_map = {}
+
     total = len(files)
     not_updated_files = []
     updated_files = []
@@ -142,7 +150,10 @@ def get_metadata_status(workspace_path: str) -> dict:
             "subjects": file_info.get("subjects", []),
             "fileSize": file_info.get("fileSize"),
             "metadataUpdated": file_info.get("metadataUpdated", False),
-            "metadataError": file_info.get("metadataError")
+            "metadataError": file_info.get("metadataError"),
+            "coverUpdated": file_info.get("coverUpdated", False),
+            "coverError": file_info.get("coverError"),
+            "uploaded": file_path in uploaded_map,
         }
 
         if file_info.get("metadataUpdated", False):

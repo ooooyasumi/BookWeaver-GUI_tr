@@ -1,8 +1,11 @@
 """图书管理 API."""
 
 from fastapi import APIRouter, Query
+from pydantic import BaseModel
+from typing import List
 import os
 import sys
+import json
 
 # 添加 core 目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,9 +17,25 @@ from core.epub_meta import (
     categorize_by_year,
     extract_epub_detail,
     build_index,
+    get_or_build_index,
+    INDEX_FILE,
 )
+from core.book_uploader import load_upload_progress
 
 router = APIRouter()
+
+
+def _merge_upload_status(files, workspace_path):
+    """将上传状态合并到文件列表中."""
+    try:
+        progress = load_upload_progress(workspace_path)
+        uploaded_map = progress.get("uploaded", {})
+    except Exception:
+        uploaded_map = {}
+
+    for f in files:
+        fp = f.get("filePath", "")
+        f["uploaded"] = fp in uploaded_map
 
 
 @router.get("/files")
@@ -26,6 +45,7 @@ async def get_library_files(
     """获取工作区目录下的所有 EPUB 文件（使用索引）."""
     try:
         epub_files = get_indexed_files(workspacePath)
+        _merge_upload_status(epub_files, workspacePath)
         file_tree = build_file_tree(epub_files)
 
         return {
@@ -100,3 +120,53 @@ async def reindex_library(
         return {"success": True, "total": total}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+class DeleteRequest(BaseModel):
+    workspacePath: str
+    filePaths: List[str]
+
+
+@router.post("/delete")
+async def delete_books(request: DeleteRequest):
+    """删除指定的 EPUB 文件并从索引中移除."""
+    deleted = []
+    errors = []
+
+    # 从索引中移除
+    index = get_or_build_index(request.workspacePath)
+    files = index.get("files", {})
+
+    for fp in request.filePaths:
+        # 删除文件
+        try:
+            if os.path.exists(fp):
+                os.remove(fp)
+            # 从索引移除
+            files.pop(fp, None)
+            deleted.append(fp)
+        except Exception as e:
+            errors.append({"filePath": fp, "error": str(e)})
+
+    # 保存索引
+    index_path = os.path.join(request.workspacePath, INDEX_FILE)
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=2)
+
+    # 同时从上传进度中移除
+    try:
+        from core.book_uploader import load_upload_progress, save_upload_progress
+        progress = load_upload_progress(request.workspacePath)
+        for fp in deleted:
+            progress.get("uploaded", {}).pop(fp, None)
+            progress.get("failed", {}).pop(fp, None)
+            progress.get("skipped", {}).pop(fp, None)
+        save_upload_progress(request.workspacePath, progress)
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "deleted": len(deleted),
+        "errors": errors,
+    }

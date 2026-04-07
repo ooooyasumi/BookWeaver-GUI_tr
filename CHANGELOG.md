@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-07
+
+### Added
+
+- **封面管理页面（CoverPage）**
+  - 侧边栏新增"封面管理"入口
+  - 网格卡片布局，支持 3-8 列自由调节
+  - 从 Google Books API + Open Library 双源搜索封面
+  - 一键批量更新：搜索 → 下载 → 替换 EPUB 封面，SSE 实时进度
+  - 更新成功实时刷新卡片封面图，右上角绿色 ✓ 标记
+  - 更新失败右上角红色 ✕ 标记，失败书籍归入"已处理"列表
+  - 全选（仅选未更新）/ 更新选中 / 全部更新 / 重置状态
+
+- **统一书籍三维状态图标（BookStatusIcons）**
+  - 三个小图标统一展示：元数据(TagsOutlined) / 封面(PictureOutlined) / 上传(CloudUploadOutlined)
+  - 绿色=已完成、红色=失败（封面更新失败）、灰色=未完成
+  - 图书管理、元数据管理、封面管理、上传管理四个页面统一显示
+  - 列表页图标位于书名/作者下方第三行，视觉更紧凑
+
+- **图书管理筛选与批量删除**
+  - 四个可多选筛选标签：元数据已更新 / 封面已更新 / 封面更新失败 / 已上传（AND 逻辑）
+  - 筛选适用于全部/文件夹/分类/年份所有视图，空分类自动隐藏
+  - 全选 checkbox + 每行 checkbox，支持勾选批量删除（带确认弹窗）
+  - `POST /api/library/delete` 删除文件 + 清索引 + 清上传记录
+
+- **上传管理筛选**
+  - 同样四个筛选标签，应用于待上传和已上传两个列表
+
+### Changed
+
+- **侧边栏 BookWeaver logo 布局调整**
+  - 移除 macOS 红绿灯向右偏移，改为独立拖拽区 + 第二行 logo，Windows/macOS 统一显示
+
+- **版本发布流程文档完善**
+  - DOCUMENT.md 新增"版本显示位置"清单，推版本时需同步更新所有位置
+
+### Fixed
+
+- **封面更新秒完无效果**：修复 Google Books URL 编码问题（改用 httpx params），新增 Open Library 兜底搜索源
+- **封面搜索 429 配额限制**：多源 fallback 机制（Google Books → Open Library）
+
 ## [0.4.0] - 2026-04-03
 
 ### Added

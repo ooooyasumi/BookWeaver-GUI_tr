@@ -1,5 +1,5 @@
 import { Menu } from 'antd'
-import { SearchOutlined, DownloadOutlined, BookOutlined, TagsOutlined, CloudUploadOutlined } from '@ant-design/icons'
+import { SearchOutlined, DownloadOutlined, BookOutlined, TagsOutlined, PictureOutlined, CloudUploadOutlined } from '@ant-design/icons'
 import { useWorkspace, PageType } from '../../contexts/WorkspaceContext'
 
 const menuItems = [
@@ -24,6 +24,11 @@ const menuItems = [
     label: '元数据管理'
   },
   {
+    key: 'cover',
+    icon: <PictureOutlined />,
+    label: '封面管理'
+  },
+  {
     key: 'upload',
     icon: <CloudUploadOutlined />,
     label: '书籍上传'
@@ -42,20 +47,22 @@ export function Sidebar() {
       <div
         className="title-bar-drag"
         style={{
-          height: 52,
-          flex: '0 0 52px',
+          height: 32,
+          flex: '0 0 32px',
+        }}
+      />
+      <div
+        style={{
+          padding: '8px 20px 12px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-start',
-          paddingLeft: 80,
+          gap: 8,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 20, lineHeight: 1 }}>📖</span>
-          <span style={{ color: '#fff', fontSize: 16, fontWeight: 700, letterSpacing: '-0.3px' }}>
-            BookWeaver
-          </span>
-        </div>
+        <span style={{ fontSize: 20, lineHeight: 1 }}>📖</span>
+        <span style={{ color: '#fff', fontSize: 16, fontWeight: 700, letterSpacing: '-0.3px' }}>
+          BookWeaver
+        </span>
       </div>
       <div style={{ flex: 1, padding: '12px 12px 0' }}>
         <Menu
@@ -79,7 +86,7 @@ export function Sidebar() {
           letterSpacing: '0.5px'
         }}
       >
-        v0.3.0
+        v0.5.0
       </div>
     </div>
   )

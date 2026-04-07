@@ -3,6 +3,7 @@ import { Card, Button, Space, Checkbox, message, Spin, Progress, Tag, Typography
 import { SyncOutlined, StopOutlined, CheckCircleOutlined, BookOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookDetailDrawer, formatFileSize, BookInfo } from '../Common/BookDetailDrawer'
+import { BookStatusIcons } from '../Common/BookStatusIcons'
 
 const { Text } = Typography
 
@@ -21,6 +22,9 @@ interface FileInfo {
   fileSize?: number
   metadataUpdated?: boolean
   metadataError?: string
+  coverUpdated?: boolean
+  coverError?: string | null
+  uploaded?: boolean
 }
 
 interface MetadataStatus {
@@ -86,6 +90,14 @@ function BookItem({
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             {book.author || '未知作者'}
             {book.publishYear && <span style={{ marginLeft: 8, color: 'var(--text-tertiary)' }}>({book.publishYear})</span>}
+          </div>
+          <div style={{ marginTop: 4 }}>
+            <BookStatusIcons
+              metadataUpdated={book.metadataUpdated}
+              coverUpdated={book.coverUpdated}
+              coverError={book.coverError}
+              uploaded={book.uploaded}
+            />
           </div>
         </div>
       </div>

@@ -388,6 +388,9 @@ def get_upload_status(workspace_path: str) -> Dict[str, Any]:
             "publishYear": file_info.get("publishYear"),
             "subjects": file_info.get("subjects", []),
             "fileSize": file_info.get("fileSize"),
+            "metadataUpdated": file_info.get("metadataUpdated", False),
+            "coverUpdated": file_info.get("coverUpdated", False),
+            "coverError": file_info.get("coverError"),
         }
 
         if file_path in uploaded_map:
