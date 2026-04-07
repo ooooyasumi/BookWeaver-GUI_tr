@@ -69,6 +69,15 @@ function startPythonBackend(): Promise<boolean> {
       return
     }
 
+    // macOS/Linux：确保可执行权限（extraResources 打包时可能丢失）
+    if (process.platform !== 'win32') {
+      try {
+        fs.chmodSync(backendExe, 0o755)
+      } catch (e) {
+        console.warn('设置执行权限失败:', e)
+      }
+    }
+
     console.log('启动后端:', backendExe)
 
     pythonProcess = spawn(backendExe, [

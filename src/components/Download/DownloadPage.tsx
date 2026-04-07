@@ -10,6 +10,11 @@ import {
 
 const { Text } = Typography
 
+// 打包后 file:// 协议必须直连后端
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://127.0.0.1:8765/api'
+  : '/api'
+
 // ─── 网速格式化 ───────────────────────────────────────────────────────────────
 
 function formatSpeed(bps: number): string {
@@ -131,7 +136,7 @@ export function DownloadPage() {
     const accResults: DownloadResult[] = [...existingResults]
 
     try {
-      const response = await fetch('/api/download/start', {
+      const response = await fetch(`${API_BASE}/download/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ books, outputDir, concurrent, downloadId })
@@ -243,7 +248,7 @@ export function DownloadPage() {
   const handlePause = async () => {
     if (!activeDownload) return
     try {
-      await fetch(`/api/download/pause/${activeDownload.downloadId}`, { method: 'POST' })
+      await fetch(`${API_BASE}/download/pause/${activeDownload.downloadId}`, { method: 'POST' })
       // 后端收到暂停信号，SSE 会发 paused 事件，由 runDownload 处理
     } catch {
       message.error('暂停失败')
@@ -299,7 +304,7 @@ export function DownloadPage() {
     if (!activeDownload) return
     // 先发暂停信号停下后端，然后标记为完成（保留已下载的）
     try {
-      await fetch(`/api/download/pause/${activeDownload.downloadId}`, { method: 'POST' })
+      await fetch(`${API_BASE}/download/pause/${activeDownload.downloadId}`, { method: 'POST' })
     } catch { /* ignore */ }
 
     updateBatchSummary(activeDownload.batchId, {

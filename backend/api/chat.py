@@ -5,11 +5,26 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import json
+import re as _re
 import httpx
 
 from openai import OpenAI
 
 router = APIRouter()
+
+
+def _normalize_base_url(url: str) -> str:
+    """规范化 base URL，提高对各种 OpenAI 兼容 API 的支持率.
+
+    处理常见情况：
+    - 去除尾部 /
+    - 用户粘贴了完整的 chat/completions 路径 → 截断到 /v1
+    - URL 末尾没有 /v1 但实际需要 → 不自动加（有些平台不需要）
+    """
+    url = url.strip().rstrip("/")
+    # 去掉用户误粘贴的完整路径后缀
+    url = _re.sub(r"/chat/completions/?$", "", url)
+    return url
 
 
 class Message(BaseModel):
@@ -97,7 +112,12 @@ async def call_search_api(
 
 
 def make_client(config: LLMConfig) -> OpenAI:
-    return OpenAI(api_key=config.apiKey, base_url=config.baseUrl)
+    base_url = _normalize_base_url(config.baseUrl)
+    return OpenAI(
+        api_key=config.apiKey,
+        base_url=base_url,
+        timeout=httpx.Timeout(60, connect=10),
+    )
 
 
 def build_history_messages(history: Optional[List[Message]]) -> List[dict]:
@@ -304,15 +324,46 @@ async def chat(request: ChatRequest):
 
 @router.post("/test")
 async def test_api(config: TestConfig):
-    """测试 API 连接."""
+    """测试 API 连接 — 直接用 httpx 发 OpenAI 兼容请求，支持各种提供商."""
+    base_url = _normalize_base_url(config.baseUrl)
+    url = f"{base_url}/chat/completions"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {config.apiKey}",
+    }
+    payload = {
+        "model": config.model,
+        "messages": [{"role": "user", "content": "hi"}],
+        "max_tokens": 5,
+        "stream": False,
+    }
+
     try:
-        client = OpenAI(api_key=config.apiKey, base_url=config.baseUrl)
-        response = client.chat.completions.create(
-            model=config.model,
-            messages=[{"role": "user", "content": "hi"}],
-            max_tokens=10
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30, connect=10)) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+
+        body = resp.json() if resp.status_code != 204 else {}
+
+        # 各平台成功判定：有 choices 就算成功
+        if resp.status_code == 200 and "choices" in body:
+            return {"success": True, "message": "连接成功"}
+
+        # 提取错误信息 — 不同平台格式不同
+        err_msg = (
+            body.get("error", {}).get("message")  # OpenAI 标准
+            or body.get("message")                 # 部分平台
+            or body.get("error")                   # 有些平台直接放字符串
+            or f"HTTP {resp.status_code}"
         )
-        return {"success": True, "message": "连接成功"}
+        if isinstance(err_msg, dict):
+            err_msg = err_msg.get("message", str(err_msg))
+        return {"success": False, "error": str(err_msg)}
+
+    except httpx.ConnectError:
+        return {"success": False, "error": "无法连接到服务器，请检查 Base URL 是否正确"}
+    except httpx.TimeoutException:
+        return {"success": False, "error": "连接超时，请检查网络或 Base URL"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 

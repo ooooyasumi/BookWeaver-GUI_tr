@@ -45,8 +45,14 @@ jobs:
           file dist-backend/bookweaver-backend || (echo "ERROR: Backend file not found!" && exit 1)
           echo "=== Backend file size ==="
           du -h dist-backend/bookweaver-backend
-          echo "=== Testing backend executable ==="
-          ./dist-backend/bookweaver-backend --help || echo "Warning: Backend --help failed, but continuing..."
+          echo "=== Ensuring executable permission ==="
+          chmod +x dist-backend/bookweaver-backend
+          echo "=== Testing backend startup (5s timeout) ==="
+          timeout 5 ./dist-backend/bookweaver-backend --host 127.0.0.1 --port 18765 &
+          BACKEND_PID=$!
+          sleep 3
+          curl -sf http://127.0.0.1:18765/api/health && echo "Backend health check OK" || echo "Warning: Backend health check failed"
+          kill $BACKEND_PID 2>/dev/null || true
 
       - name: Build frontend
         run: npm run build:frontend
@@ -112,6 +118,12 @@ jobs:
           file dist-backend/bookweaver-backend.exe || (echo "ERROR: Backend file not found!" && exit 1)
           echo "=== Backend file size ==="
           du -h dist-backend/bookweaver-backend.exe
+          echo "=== Testing backend startup (5s timeout) ==="
+          ./dist-backend/bookweaver-backend.exe --host 127.0.0.1 --port 18765 &
+          BACKEND_PID=$!
+          sleep 5
+          curl -sf http://127.0.0.1:18765/api/health && echo "Backend health check OK" || echo "Warning: Backend health check failed"
+          kill $BACKEND_PID 2>/dev/null || true
 
       - name: Build frontend
         run: npm run build:frontend
