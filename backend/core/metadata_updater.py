@@ -12,7 +12,7 @@ from datetime import datetime
 from ebooklib import epub
 
 from .llm_harness import call_llm_batch
-from .epub_meta import INDEX_FILE
+from .epub_meta import INDEX_FILE, load_index, save_index
 
 # 批量处理的最大书籍数量
 BATCH_SIZE = 5
@@ -84,26 +84,6 @@ def update_epub_metadata(file_path: str, metadata: dict) -> tuple:
         return False, str(e)
 
 
-def load_index(workspace_path: str) -> dict:
-    """加载索引文件"""
-    index_path = os.path.join(workspace_path, INDEX_FILE)
-
-    if os.path.exists(index_path):
-        with open(index_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-
-    return {"files": {}, "version": "1.0"}
-
-
-def save_index(workspace_path: str, index_data: dict):
-    """保存索引文件"""
-    index_path = os.path.join(workspace_path, INDEX_FILE)
-    os.makedirs(os.path.dirname(index_path), exist_ok=True)
-
-    with open(index_path, 'w', encoding='utf-8') as f:
-        json.dump(index_data, f, ensure_ascii=False, indent=2)
-
-
 def update_file_metadata_status(
     workspace_path: str,
     file_path: str,
@@ -112,6 +92,8 @@ def update_file_metadata_status(
 ):
     """更新文件的元数据状态"""
     index_data = load_index(workspace_path)
+    if not index_data:
+        index_data = {"files": {}, "version": "1.0"}
 
     if file_path in index_data.get("files", {}):
         index_data["files"][file_path]["metadataUpdated"] = updated
@@ -124,6 +106,8 @@ def update_file_metadata_status(
 def get_metadata_status(workspace_path: str) -> dict:
     """获取元数据管理状态"""
     index_data = load_index(workspace_path)
+    if not index_data:
+        index_data = {"files": {}, "version": "1.0"}
 
     files = index_data.get("files", {})
 

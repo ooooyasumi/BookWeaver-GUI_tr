@@ -238,6 +238,86 @@ def _file_fingerprint(file_path: str) -> str:
     return f"{stat.st_size}:{stat.st_mtime_ns}"
 
 
+# ─── 路径转换工具 ─────────────────────────────────────────────────────────────
+
+def _to_rel(workspace_path: str, file_path: str) -> str:
+    """绝对路径 → 相对路径（相对于工作区）."""
+    if os.path.isabs(file_path):
+        return os.path.relpath(file_path, workspace_path)
+    return file_path
+
+
+def _to_abs(workspace_path: str, file_path: str) -> str:
+    """相对路径 → 绝对路径."""
+    if os.path.isabs(file_path):
+        return file_path
+    return os.path.normpath(os.path.join(workspace_path, file_path))
+
+
+def _has_abs_keys(files_dict: dict) -> bool:
+    """检测 files 字典的 key 是否为绝对路径（旧格式）."""
+    for key in files_dict:
+        return os.path.isabs(key)
+    return False
+
+
+def _migrate_index_paths(workspace_path: str, index: Dict[str, Any]) -> Dict[str, Any]:
+    """将旧格式（绝对路径 key）索引迁移为新格式（相对路径 key）.
+
+    运行时返回的 index 始终使用绝对路径 key（方便业务代码），
+    但文件中存储相对路径（方便跨机器迁移）。
+    """
+    old_files = index.get("files", {})
+    if not _has_abs_keys(old_files):
+        # 新格式（相对路径），转为绝对路径用于运行时
+        new_files = {}
+        for rel_key, meta in old_files.items():
+            abs_key = _to_abs(workspace_path, rel_key)
+            meta["filePath"] = abs_key
+            new_files[abs_key] = meta
+        index["files"] = new_files
+    else:
+        old_workspace = index.get("workspace", "")
+        if old_workspace and old_workspace != workspace_path:
+            # 旧格式 + 不同机器：用 relativePath 重建绝对路径
+            new_files = {}
+            for _old_key, meta in old_files.items():
+                rel = meta.get("relativePath", "")
+                if not rel:
+                    # 无 relativePath，尝试从旧路径推导
+                    rel = os.path.basename(_old_key)
+                abs_key = _to_abs(workspace_path, rel)
+                meta["filePath"] = abs_key
+                new_files[abs_key] = meta
+            index["files"] = new_files
+        # else: 旧格式 + 同一机器，key 已经是正确的绝对路径
+
+    index["workspace"] = workspace_path
+    return index
+
+
+def save_index(workspace_path: str, index: Dict[str, Any]):
+    """保存索引（绝对路径 key → 相对路径存储）."""
+    # 深拷贝 files，转为相对路径存储
+    store_files = {}
+    for abs_key, meta in index.get("files", {}).items():
+        rel_key = _to_rel(workspace_path, abs_key)
+        store_meta = dict(meta)
+        store_meta["filePath"] = rel_key
+        store_files[rel_key] = store_meta
+
+    store_index = {
+        "version": index.get("version", "1.0"),
+        "workspace": workspace_path,
+        "files": store_files,
+    }
+
+    index_path = os.path.join(workspace_path, INDEX_FILE)
+    os.makedirs(os.path.dirname(index_path), exist_ok=True)
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(store_index, f, ensure_ascii=False, indent=2)
+
+
 def build_index(workspace_path: str) -> Dict[str, Any]:
     """
     对工作区所有 EPUB 文件建立索引并写入缓存文件.
@@ -280,17 +360,14 @@ def build_index(workspace_path: str) -> Dict[str, Any]:
             "coverError": existing_meta.get("coverError"),
         }
 
-    # 写入索引文件
-    index_path = os.path.join(workspace_path, INDEX_FILE)
-    os.makedirs(os.path.dirname(index_path), exist_ok=True)
-    with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, indent=2)
+    # 写入索引文件（使用集中式 save，自动转相对路径）
+    save_index(workspace_path, index)
 
     return index
 
 
 def load_index(workspace_path: str) -> Optional[Dict[str, Any]]:
-    """加载已有索引（如果存在且有效）."""
+    """加载已有索引（如果存在且有效），自动迁移旧格式."""
     index_path = os.path.join(workspace_path, INDEX_FILE)
     if not os.path.exists(index_path):
         return None
@@ -299,9 +376,8 @@ def load_index(workspace_path: str) -> Optional[Dict[str, Any]]:
         with open(index_path, "r", encoding="utf-8") as f:
             index = json.load(f)
 
-        if index.get("workspace") != workspace_path:
-            return None
-
+        # 迁移路径格式（旧绝对路径 → 新相对路径）
+        index = _migrate_index_paths(workspace_path, index)
         return index
     except (json.JSONDecodeError, KeyError):
         return None
@@ -374,11 +450,8 @@ def get_or_build_index(workspace_path: str) -> Dict[str, Any]:
 
     existing["files"] = indexed
 
-    # 写回
-    index_path = os.path.join(workspace_path, INDEX_FILE)
-    os.makedirs(os.path.dirname(index_path), exist_ok=True)
-    with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(existing, f, ensure_ascii=False, indent=2)
+    # 写回（使用集中式 save，自动转相对路径）
+    save_index(workspace_path, existing)
 
     return existing
 

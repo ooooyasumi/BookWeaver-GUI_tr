@@ -13,7 +13,7 @@ import httpx
 from ebooklib import epub, ITEM_IMAGE, ITEM_COVER
 
 from .epub_meta import (
-    INDEX_FILE, load_index, get_or_build_index, _extract_cover_image
+    INDEX_FILE, load_index, save_index, get_or_build_index, _extract_cover_image
 )
 
 # ==================== 取消标志 ====================
@@ -228,10 +228,7 @@ def load_and_save_index(workspace_path, file_path, updates):
     files = index.get("files", {})
     if file_path in files:
         files[file_path].update(updates)
-        index_path = os.path.join(workspace_path, INDEX_FILE)
-        import json
-        with open(index_path, "w", encoding="utf-8") as f:
-            json.dump(index, f, ensure_ascii=False, indent=2)
+        save_index(workspace_path, index)
 
 
 def update_file_cover_status(

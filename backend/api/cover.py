@@ -17,7 +17,7 @@ from core.cover_manager import (
     set_cancel_flag,
     reset_cancel_flag,
 )
-from core.epub_meta import load_index, INDEX_FILE, get_or_build_index
+from core.epub_meta import load_index, INDEX_FILE, get_or_build_index, save_index
 
 import os
 
@@ -154,9 +154,7 @@ async def cover_reset_status(workspacePath: str, filePath: Optional[str] = None)
             files[fp]["coverUpdatedAt"] = None
             files[fp]["coverError"] = None
 
-    # 保存索引
-    index_path = os.path.join(workspacePath, INDEX_FILE)
-    with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, indent=2)
+    # 保存索引（使用集中式 save，自动转相对路径）
+    save_index(workspacePath, index)
 
     return {"success": True}

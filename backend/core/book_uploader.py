@@ -15,6 +15,7 @@ import httpx
 from ebooklib import epub, ITEM_IMAGE
 
 from .llm_harness import CATEGORY_MAP
+from .epub_meta import _to_rel, _to_abs
 
 # ==================== 配置常量 ====================
 
@@ -301,23 +302,41 @@ def prepare_book_data(
 # ==================== 进度持久化 ====================
 
 def load_upload_progress(workspace_path: str) -> Dict[str, Any]:
-    """加载上传进度记录"""
+    """加载上传进度记录（自动迁移旧绝对路径格式，返回绝对路径 key）."""
     progress_path = os.path.join(workspace_path, UPLOAD_PROGRESS_FILE)
     if os.path.exists(progress_path):
         try:
             with open(progress_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+            # 将 key 转为绝对路径（兼容新旧格式）
+            for section in ("uploaded", "failed", "skipped"):
+                old = data.get(section, {})
+                new = {}
+                for key, val in old.items():
+                    abs_key = _to_abs(workspace_path, key)
+                    new[abs_key] = val
+                data[section] = new
+            return data
         except (json.JSONDecodeError, IOError):
             pass
     return {"uploaded": {}, "failed": {}, "skipped": {}}
 
 
 def save_upload_progress(workspace_path: str, progress: Dict[str, Any]):
-    """保存上传进度记录"""
+    """保存上传进度记录（绝对路径 key → 相对路径存储）."""
     progress_path = os.path.join(workspace_path, UPLOAD_PROGRESS_FILE)
     os.makedirs(os.path.dirname(progress_path), exist_ok=True)
+    # 转为相对路径存储
+    store = {}
+    for section in ("uploaded", "failed", "skipped"):
+        old = progress.get(section, {})
+        new = {}
+        for key, val in old.items():
+            rel_key = _to_rel(workspace_path, key)
+            new[rel_key] = val
+        store[section] = new
     with open(progress_path, 'w', encoding='utf-8') as f:
-        json.dump(progress, f, ensure_ascii=False, indent=2)
+        json.dump(store, f, ensure_ascii=False, indent=2)
 
 
 def mark_uploaded(workspace_path: str, file_path: str, base_url: str):

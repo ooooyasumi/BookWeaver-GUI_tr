@@ -18,6 +18,7 @@ from core.epub_meta import (
     extract_epub_detail,
     build_index,
     get_or_build_index,
+    save_index,
     INDEX_FILE,
 )
 from core.book_uploader import load_upload_progress
@@ -148,10 +149,8 @@ async def delete_books(request: DeleteRequest):
         except Exception as e:
             errors.append({"filePath": fp, "error": str(e)})
 
-    # 保存索引
-    index_path = os.path.join(request.workspacePath, INDEX_FILE)
-    with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, indent=2)
+    # 保存索引（使用集中式 save，自动转相对路径）
+    save_index(request.workspacePath, index)
 
     # 同时从上传进度中移除
     try:
