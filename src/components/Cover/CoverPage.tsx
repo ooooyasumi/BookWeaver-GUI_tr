@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Button, Space, Checkbox, message, Spin, Progress, Slider, Typography } from 'antd'
-import { PictureOutlined, SyncOutlined, StopOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined } from '@ant-design/icons'
+import { Card, Button, Space, Checkbox, message, Spin, Progress, Slider, Typography, Modal } from 'antd'
+import { PictureOutlined, SyncOutlined, StopOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
 
@@ -167,6 +167,7 @@ export function CoverPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   const [columns, setColumns] = useState(5)
+  const [deleting, setDeleting] = useState(false)
 
   // 合并全部文件（未更新在前）
   const allBooks = status ? [...status.notUpdatedFiles, ...status.updatedFiles] : []
@@ -269,18 +270,17 @@ export function CoverPage() {
     setSelected(next)
   }
 
-  // 全选：只选未更新的
+  // 全选：选中所有书籍
   const handleSelectAll = (checked: boolean) => {
-    if (checked && status) {
-      setSelected(new Set(status.notUpdatedFiles.map(f => f.filePath)))
+    if (checked) {
+      setSelected(new Set(allBooks.map(f => f.filePath)))
     } else {
       setSelected(new Set())
     }
   }
 
-  const notUpdatedCount = status?.notUpdatedFiles.length || 0
-  const isAllSelected = notUpdatedCount > 0 && selected.size === notUpdatedCount
-  const isIndeterminate = selected.size > 0 && selected.size < notUpdatedCount
+  const isAllSelected = allBooks.length > 0 && selected.size === allBooks.length
+  const isIndeterminate = selected.size > 0 && selected.size < allBooks.length
 
   // ── 开始更新 ────────────────────────────────────────────────────────────
 
@@ -427,6 +427,45 @@ export function CoverPage() {
     }
   }
 
+  // ── 删除选中书籍 ──────────────────────────────────────────────────────
+
+  const handleDelete = () => {
+    if (selected.size === 0) return
+    Modal.confirm({
+      title: `确认删除 ${selected.size} 本书籍？`,
+      content: '文件将从磁盘永久删除，此操作不可撤销。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        setDeleting(true)
+        try {
+          const response = await fetch(`${API_BASE}/library/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              workspacePath,
+              filePaths: Array.from(selected),
+            }),
+          })
+          const result = await response.json()
+          if (result.success) {
+            message.success(`已删除 ${result.deleted} 本书`)
+            setSelected(new Set())
+            loadStatus()
+          } else {
+            message.error(`删除失败: ${result.error || '未知错误'}`)
+          }
+        } catch (e: any) {
+          console.error('[Cover] 删除失败:', e)
+          message.error(`删除请求失败: ${e?.message || '网络错误'}`)
+        } finally {
+          setDeleting(false)
+        }
+      },
+    })
+  }
+
   // ── 渲染 ────────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -526,6 +565,16 @@ export function CoverPage() {
                 <Button onClick={resetStatus}>
                   重置状态
                 </Button>
+                {selected.size > 0 && (
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleDelete}
+                    loading={deleting}
+                  >
+                    删除 ({selected.size})
+                  </Button>
+                )}
               </>
             )}
           </Space>

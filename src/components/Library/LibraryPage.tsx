@@ -24,23 +24,25 @@ const API_BASE = window.location.protocol === 'file:'
 type ViewMode = 'all' | 'folder' | 'subject' | 'year'
 
 // 筛选标签类型
-type FilterKey = 'metadataUpdated' | 'coverUpdated' | 'coverError' | 'uploaded'
+type FilterKey = 'metadataNotUpdated' | 'coverNotUpdated' | 'coverError' | 'uploaded' | 'notUploaded'
 
 const FILTER_OPTIONS: { key: FilterKey; label: string; icon: React.ReactNode; color: string }[] = [
-  { key: 'metadataUpdated', label: '元数据已更新', icon: <TagsOutlined />, color: '#52c41a' },
-  { key: 'coverUpdated', label: '封面已更新', icon: <PictureOutlined />, color: '#52c41a' },
+  { key: 'metadataNotUpdated', label: '元数据未更新', icon: <TagsOutlined />, color: '#faad14' },
+  { key: 'coverNotUpdated', label: '封面未更新', icon: <PictureOutlined />, color: '#faad14' },
   { key: 'coverError', label: '封面更新失败', icon: <CloseCircleOutlined />, color: '#ff4d4f' },
   { key: 'uploaded', label: '已上传', icon: <CloudUploadOutlined />, color: '#52c41a' },
+  { key: 'notUploaded', label: '未上传', icon: <CloudUploadOutlined />, color: '#faad14' },
 ]
 
 function matchesFilter(book: EpubMetadata, filters: Set<FilterKey>): boolean {
   if (filters.size === 0) return true
   for (const f of filters) {
     switch (f) {
-      case 'metadataUpdated': if (!book.metadataUpdated) return false; break
-      case 'coverUpdated': if (!book.coverUpdated) return false; break
+      case 'metadataNotUpdated': if (book.metadataUpdated) return false; break
+      case 'coverNotUpdated': if (book.coverUpdated || book.coverError) return false; break
       case 'coverError': if (!(!book.coverUpdated && book.coverError)) return false; break
       case 'uploaded': if (!book.uploaded) return false; break
+      case 'notUploaded': if (book.uploaded) return false; break
     }
   }
   return true
