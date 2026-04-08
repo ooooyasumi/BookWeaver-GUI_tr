@@ -5,7 +5,7 @@ import { useWorkspace } from '../../contexts/WorkspaceContext'
 
 const { Title, Text } = Typography
 
-const APP_VERSION = '0.5.6'
+const APP_VERSION = '0.5.7'
 
 export function WelcomePage() {
   const { openWorkspace, isLoading } = useWorkspace()
