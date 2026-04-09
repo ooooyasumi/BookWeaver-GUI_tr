@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-04-09
+
+### Added
+
+- **设置页版本历史**：设置弹窗底部版本号可点击，弹出模态框展示版本更新历史（新上旧下，当前版高亮）
+- **AI 对话搜索优化**：新增12个分类 few-shot 示例，关键词从口语化转为精准分类词，提升 Gutenberg 搜索召回率
+- **元数据分类优化**：新增15个 few-shot 示例覆盖更多分类类型，新增分类选择指南规则，避免泛化分类
+
+### Fixed
+
+- **进度条0/0问题**：修复闭包捕获 stale activeTask 导致的进度丢失，setActiveTask 改用 await，updateActiveTask 支持函数式更新
+- **AI提示词输出稳定性**：JSON解析增强健壮性（正则提取嵌入文本中的JSON），few-shot 覆盖正负面case
+- **搜索结果删除按钮**：清空按钮改为删除按钮，正确调用 removeFromSearchResults 移除勾选书籍
+- **上传失败记录不全**：验证失败（无法解析EPUB/缺少作者/无法提取封面）改用 mark_failed 而非 mark_skipped，确保 uploadError 正确写入
+
+### Changed
+
+- **左侧菜单顺序调整**：封面管理移至元数据管理之前
+
 ## [0.6.1] - 2026-04-08
 
 ### Added

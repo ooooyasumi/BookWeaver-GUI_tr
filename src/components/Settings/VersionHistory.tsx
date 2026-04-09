@@ -12,10 +12,28 @@ interface VersionEntry {
   changed: string[]
 }
 
-const CURRENT_VERSION = '0.6.1'
+const CURRENT_VERSION = '0.6.2'
 
 // 内嵌的版本历史数据（与 CHANGELOG.md 保持同步）
 const VERSION_HISTORY: VersionEntry[] = [
+  {
+    version: '0.6.2',
+    date: '2026-04-09',
+    added: [
+      '设置页版本历史：设置弹窗底部版本号可点击，弹出模态框展示版本更新历史',
+      'AI对话搜索优化：新增12个分类few-shot示例，关键词从口语化转为精准分类词',
+      '元数据分类优化：新增15个few-shot示例，新增分类选择指南规则',
+    ],
+    fixed: [
+      '进度条0/0问题：修复闭包捕获stale activeTask导致进度丢失',
+      'AI提示词输出稳定性：JSON解析增强健壮性',
+      '搜索结果删除按钮：清空按钮改为删除按钮',
+      '上传失败记录不全：验证失败改用mark_failed确保uploadError正确写入',
+    ],
+    changed: [
+      '左侧菜单顺序调整：封面管理移至元数据管理之前',
+    ],
+  },
   {
     version: '0.6.1',
     date: '2026-04-08',
