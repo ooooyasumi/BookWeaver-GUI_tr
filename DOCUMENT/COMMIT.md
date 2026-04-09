@@ -113,6 +113,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 |------|------|
 | `src/components/Layout/Sidebar.tsx` | 侧边栏左下角版本号文字（格式：`v0.x.x`） |
 | `src/components/Layout/WelcomePage.tsx` | 欢迎页标题版本显示（如有） |
+| `src/components/Settings/VersionHistory.tsx` | 在 VERSION_HISTORY 数组最上面插入新版本，currentVersion 改为新版本号 |
 
 ### 4. 更新 DOCUMENT.md（如有架构更新）
 - 阅读 DOCUMENT.md 检查是否有需要更新的内容
