@@ -19,14 +19,14 @@ const menuItems = [
     label: '图书管理'
   },
   {
-    key: 'metadata',
-    icon: <TagsOutlined />,
-    label: '元数据管理'
-  },
-  {
     key: 'cover',
     icon: <PictureOutlined />,
     label: '封面管理'
+  },
+  {
+    key: 'metadata',
+    icon: <TagsOutlined />,
+    label: '元数据管理'
   },
   {
     key: 'upload',
