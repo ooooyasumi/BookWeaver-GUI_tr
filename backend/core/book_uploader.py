@@ -514,25 +514,25 @@ async def upload_single_book(
     metadata = extract_upload_metadata(file_path)
     if not metadata:
         error = "无法解析 EPUB"
-        print(f"[Upload] 跳过 {title}: {error}")
-        mark_skipped(workspace_path, file_path, error)
-        return {"success": False, "error": error, "title": title, "filePath": file_path, "status": "skipped"}
+        print(f"[Upload] 失败 {title}: {error}")
+        mark_failed(workspace_path, file_path, error)
+        return {"success": False, "error": error, "title": title, "filePath": file_path, "status": "failed"}
 
     title = metadata.get("title") or title
 
     # 2. 验证必填字段
     valid, error_msg = validate_upload_metadata(metadata)
     if not valid:
-        print(f"[Upload] 跳过 {title}: {error_msg}")
-        mark_skipped(workspace_path, file_path, error_msg)
-        return {"success": False, "error": error_msg, "title": title, "filePath": file_path, "status": "skipped"}
+        print(f"[Upload] 失败 {title}: {error_msg}")
+        mark_failed(workspace_path, file_path, error_msg)
+        return {"success": False, "error": error_msg, "title": title, "filePath": file_path, "status": "failed"}
 
     # 3. 检查封面
     if not metadata.get("cover_data"):
         error = "无法提取封面"
-        print(f"[Upload] 跳过 {title}: {error}")
-        mark_skipped(workspace_path, file_path, error)
-        return {"success": False, "error": error, "title": title, "filePath": file_path, "status": "skipped"}
+        print(f"[Upload] 失败 {title}: {error}")
+        mark_failed(workspace_path, file_path, error)
+        return {"success": False, "error": error, "title": title, "filePath": file_path, "status": "failed"}
 
     # 4. 查重（书名 + 作者）
     book_name = metadata.get("title", "")
