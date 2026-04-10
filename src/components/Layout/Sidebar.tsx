@@ -1,5 +1,5 @@
 import { Menu } from 'antd'
-import { SearchOutlined, DownloadOutlined, BookOutlined, TagsOutlined, PictureOutlined, CloudUploadOutlined } from '@ant-design/icons'
+import { SearchOutlined, DownloadOutlined, BookOutlined, TagsOutlined, PictureOutlined, CloudUploadOutlined, CodeOutlined } from '@ant-design/icons'
 import { useWorkspace, PageType } from '../../contexts/WorkspaceContext'
 import { VersionLink } from '../Settings/VersionHistory'
 
@@ -36,12 +36,24 @@ const menuItems = [
   }
 ]
 
+// 调试日志菜单项
+const logsMenuItem = {
+  key: 'logs',
+  icon: <CodeOutlined />,
+  label: '日志终端'
+}
+
 export function Sidebar() {
-  const { currentPage, setCurrentPage } = useWorkspace()
+  const { currentPage, setCurrentPage, debugMode } = useWorkspace()
 
   const handleMenuClick = ({ key }: { key: string }) => {
     setCurrentPage(key as PageType)
   }
+
+  // 根据 debugMode 决定是否显示日志菜单
+  const visibleMenuItems = debugMode
+    ? [...menuItems, logsMenuItem]
+    : menuItems
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -70,7 +82,7 @@ export function Sidebar() {
           theme="dark"
           mode="inline"
           selectedKeys={[currentPage]}
-          items={menuItems}
+          items={visibleMenuItems}
           onClick={handleMenuClick}
           style={{
             border: 'none',

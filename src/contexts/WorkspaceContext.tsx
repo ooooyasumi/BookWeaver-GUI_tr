@@ -100,7 +100,7 @@ export interface Config {
   }
 }
 
-export type PageType = 'search' | 'download' | 'library' | 'metadata' | 'cover' | 'upload'
+export type PageType = 'search' | 'download' | 'library' | 'metadata' | 'cover' | 'upload' | 'logs'
 
 // ─── 活跃任务类型（供 Metadata/Cover/Upload 共用）───────────────────────────
 
@@ -137,6 +137,8 @@ interface WorkspaceContextType {
   appState: AppState | null
   currentPage: PageType
   isLoading: boolean
+  debugMode: boolean
+  setDebugMode: (enabled: boolean) => void
 
   // 搜索结果（临时，不持久化）
   searchResults: BookResult[]
@@ -190,6 +192,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [appState, setAppState] = useState<AppState | null>(null)
   const [currentPage, setCurrentPage] = useState<PageType>('search')
   const [isLoading, setIsLoading] = useState(false)
+  const [debugMode, setDebugMode] = useState(false)
 
   // 临时状态（不持久化）
   const [searchResults, setSearchResultsState] = useState<BookResult[]>([])
@@ -358,6 +361,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       appState,
       currentPage,
       isLoading,
+      debugMode,
+      setDebugMode,
       searchResults,
       searchResultSelectedKeys,
       activeDownload,

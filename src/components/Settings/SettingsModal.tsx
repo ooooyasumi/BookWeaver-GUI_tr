@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { Modal, Form, Input, AutoComplete, InputNumber, Button, Space, Divider, message, Tag, Switch, Row, Col, Segmented, Select } from 'antd'
 import { SettingOutlined, SaveOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, MoonOutlined, LockOutlined, EditOutlined, BugOutlined } from '@ant-design/icons'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { VersionLink } from './VersionHistory'
-import { LogConsole } from './LogConsole'
 
 interface SettingsModalProps {
   open: boolean
@@ -96,6 +96,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [llmMode, setLlmMode] = useState<'preset' | 'custom'>('preset')
   const [selectedPreset, setSelectedPreset] = useState<string>('minimax')
   const { toggleTheme, isDark } = useTheme()
+  const { setDebugMode } = useWorkspace()
 
   const apiKey = Form.useWatch(['llm', 'apiKey'], form)
   const baseUrl = Form.useWatch(['llm', 'baseUrl'], form)
@@ -103,6 +104,11 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   // useWatch 监听 debugMode 变化，触发组件更新
   const debugModeWatch = Form.useWatch(['debugMode'], form)
   const canTest = llmMode === 'preset' || !!(apiKey?.trim() && baseUrl?.trim() && model?.trim())
+
+  // 同步 debugMode 到 Context
+  useEffect(() => {
+    setDebugMode(!!debugModeWatch)
+  }, [debugModeWatch, setDebugMode])
 
   // 加载配置
   useEffect(() => {
@@ -473,9 +479,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             </Row>
           </Form>
         </div>
-
-        {/* 调试日志终端 */}
-        <LogConsole visible={!!debugModeWatch} />
       </div>
 
       {/* 底部按钮 */}

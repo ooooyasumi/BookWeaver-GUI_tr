@@ -9,6 +9,7 @@ import { MetadataPage } from '../Metadata/MetadataPage'
 import { CoverPage } from '../Cover/CoverPage'
 import { UploadPage } from '../Upload/UploadPage'
 import { SettingsModal } from '../Settings/SettingsModal'
+import { LogConsolePage } from '../Settings/LogConsolePage'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { useTheme } from '../../contexts/ThemeContext'
 
@@ -33,6 +34,8 @@ export function AppLayout() {
         return <CoverPage />
       case 'upload':
         return <UploadPage />
+      case 'logs':
+        return <LogConsolePage />
       default:
         return <SearchPage />
     }
