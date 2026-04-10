@@ -177,8 +177,8 @@ Books to process:
 
 Examples:
 
-Books: [{"index": 0, "title": "Pride and Prejudice", "author": "Jane Austen"}, {"index": 1, "title": "The Republic", "author": "Plato"}, {"index": 2, "title": "A Brief History of Time", "author": "Stephen Hawking"}, {"index": 3, "title": "The Hobbit", "author": "J.R.R. Tolkien"}, {"index": 4, "title": "Meditations", "author": "Marcus Aurelius"}]
-Output: [{{"index": 0, "success": true, "error": null, "metadata": {{"description": "Pride and Prejudice, a satirical novel first published in 1813, follows the turbulent relationship between Elizabeth Bennet, a witty and intelligent young woman, and the proud Fitzwilliam Darcy. Set in early 19th-century England, the story explores themes of love, reputation, and social class.", "categories": [16, 32], "publishYear": 1813}}}, {{"index": 1, "success": true, "error": null, "metadata": {{"description": "The Republic is a Socratic dialogue written by Plato around 375 BC. It concerns justice, the order and character of the just city-state, and the just man. Through a conversation with Socrates, it explores the nature of reality, the theory of Forms, and ideal governance.", "categories": [36, 31], "publishYear": -375}}}, {{"index": 2, "success": true, "error": null, "metadata": {{"description": "A Brief History of Time is a popular science book published in 1988 by physicist Stephen Hawking. It explains concepts like the Big Bang, black holes, and the universe to non-specialist readers.", "categories": [34, 2], "publishYear": 1988}}}, {{"index": 3, "success": true, "error": null, "metadata": {{"description": "The Hobbit is a fantasy novel published in 1937, following Bilbo Baggins on his quest with a group of dwarves. Set in Tolkien's fictional Middle-earth, it combines adventure, mythology, and heroic quest themes.", "categories": [17, 16], "publishYear": 1937}}}, {{"index": 4, "success": true, "error": null, "metadata": {{"description": "Meditations is a series of personal writings by Roman Emperor Marcus Aurelius, written in Greek during his military campaigns. The work represents Stoic philosophy in practice.", "categories": [31, 36], "publishYear": 180}}}]
+Books: [{{"index": 0, "title": "Pride and Prejudice", "author": "Jane Austen"}}, {{"index": 1, "title": "The Republic", "author": "Plato"}}, {{"index": 2, "title": "A Brief History of Time", "author": "Stephen Hawking"}}, {{"index": 3, "title": "The Hobbit", "author": "J.R.R. Tolkien"}}, {{"index": 4, "title": "Meditations", "author": "Marcus Aurelius"}}]
+Output: [{{"index": 0, "success": true, "error": null, "metadata": {{"description": "Pride and Prejudice, a satirical novel first published in 1813, follows the turbulent relationship between Elizabeth Bennet, a witty and intelligent young woman, and the proud Fitzwilliam Darcy. Set in early 19th-century England, the story explores themes of love, reputation, and social class.", "categories": [16, 32], "publishYear": 1813}}}}, {{"index": 1, "success": true, "error": null, "metadata": {{"description": "The Republic is a Socratic dialogue written by Plato around 375 BC. It concerns justice, the order and character of the just city-state, and the just man. Through a conversation with Socrates, it explores the nature of reality, the theory of Forms, and ideal governance.", "categories": [36, 31], "publishYear": -375}}}}, {{"index": 2, "success": true, "error": null, "metadata": {{"description": "A Brief History of Time is a popular science book published in 1988 by physicist Stephen Hawking. It explains concepts like the Big Bang, black holes, and the universe to non-specialist readers.", "categories": [34, 2], "publishYear": 1988}}}}, {{"index": 3, "success": true, "error": null, "metadata": {{"description": "The Hobbit is a fantasy novel published in 1937, following Bilbo Baggins on his quest with a group of dwarves. Set in Tolkien's fictional Middle-earth, it combines adventure, mythology, and heroic quest themes.", "categories": [17, 16], "publishYear": 1937}}}}, {{"index": 4, "success": true, "error": null, "metadata": {{"description": "Meditations is a series of personal writings by Roman Emperor Marcus Aurelius, written in Greek during his military campaigns. The work represents Stoic philosophy in practice.", "categories": [31, 36], "publishYear": 180}}}}]
 
 Respond with a JSON array where each item has:
 {{
@@ -509,7 +509,13 @@ async def call_llm_batch(
     if not books:
         return []
 
-    prompt = build_batch_prompt(books)
+    try:
+        prompt = build_batch_prompt(books)
+    except Exception as e:
+        return [{
+            "success": False,
+            "error": f"Failed to build prompt: {str(e)}"
+        } for _ in books]
 
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
