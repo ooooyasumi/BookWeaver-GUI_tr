@@ -34,7 +34,7 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173')
-    mainWindow.webContents.openDevTools()
+    // DevTools 通过快捷键打开 (Cmd+Option+I 或 F12)，不在启动时自动打开
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
