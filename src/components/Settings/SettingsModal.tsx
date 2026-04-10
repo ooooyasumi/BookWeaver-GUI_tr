@@ -29,7 +29,7 @@ interface Config {
 }
 
 const LLM_MODELS = [
-  { label: 'MiniMax M2.5', value: 'minimax-m2.5' },
+  { label: 'MiniMax M2', value: 'MiniMax-M2' },
   { label: 'Qwen 3.5 Plus', value: 'qwen3.5-plus' },
   { label: 'Qwen 3.5 Turbo', value: 'qwen3.5-turbo' },
   { label: 'Qwen Max', value: 'qwen-max' },
