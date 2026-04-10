@@ -65,64 +65,84 @@ Author: {author}
 Examples:
 
 Input: Title: "Pride and Prejudice", Author: "Jane Austen"
-Output: {{"success": true, "error": null, "metadata": {{"description": "Pride and Prejudice, a satirical novel first published in 1813, follows the turbulent relationship between Elizabeth Bennet, a witty and intelligent young woman, and the proud Fitzwilliam Darcy. Set in early 19th-century England, the story explores themes of love, reputation, and social class. Through a series of misunderstandings and personal growth, the characters learn that first impressions can be deceiving and that true happiness requires overcoming prejudice and personal pride.", "categories": [16, 32], "publishYear": 1813}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "Pride and Prejudice, a satirical novel first published in 1813, follows the turbulent relationship between Elizabeth Bennet, a witty and intelligent young woman, and the proud Fitzwilliam Darcy. Set in early 19th-century England, the story explores themes of love, reputation, and social class. Through a series of misunderstandings and personal growth, the characters learn that first impressions can be deceiving and that true happiness requires overcoming prejudice and personal pride.", "categories": [16, 32], "publishYear": 1813}}}}
+
 
 Input: Title: "The Republic", Author: "Plato"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Republic is a Socratic dialogue written by Plato around 375 BC. It concerns justice, the order and character of the just city-state, and the just man. Plato uses the conversation with Socrates to explore the nature of reality, the theory of Forms, the epistemology of knowledge, the philosophy of education, and the ideal governance of society.", "categories": [36, 31], "publishYear": -375}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Republic is a Socratic dialogue written by Plato around 375 BC. It concerns justice, the order and character of the just city-state, and the just man. Plato uses the conversation with Socrates to explore the nature of reality, the theory of Forms, the epistemology of knowledge, the philosophy of education, and the ideal governance of society.", "categories": [36, 31], "publishYear": -375}}}}
+
 
 Input: Title: "1984", Author: "George Orwell"
-Output: {{"success": true, "error": null, "metadata": {{"description": "1984 is a dystopian social science fiction novel published in 1949. Set in a totalitarian society under constant surveillance, it follows Winston Smith, a low-ranking party member who dreams of rebellion against the omnipresent state. The novel explores the dangers of totalitarianism, mass surveillance, and the manipulation of truth and history.", "categories": [33, 16], "publishYear": 1949}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "1984 is a dystopian social science fiction novel published in 1949. Set in a totalitarian society under constant surveillance, it follows Winston Smith, a low-ranking party member who dreams of rebellion against the omnipresent state. The novel explores the dangers of totalitarianism, mass surveillance, and the manipulation of truth and history.", "categories": [33, 16], "publishYear": 1949}}}}
+
 
 Input: Title: "A Brief History of Time", Author: "Stephen Hawking"
-Output: {{"success": true, "error": null, "metadata": {{"description": "A Brief History of Time is a popular science book published in 1988 by physicist Stephen Hawking. It explains concepts like the Big Bang, black holes, light cones, and the universe to non-specialist readers. Hawking discusses fundamental questions about the nature of the cosmos, the existence of God, and the future of humanity.", "categories": [34, 2], "publishYear": 1988}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "A Brief History of Time is a popular science book published in 1988 by physicist Stephen Hawking. It explains concepts like the Big Bang, black holes, light cones, and the universe to non-specialist readers. Hawking discusses fundamental questions about the nature of the cosmos, the existence of God, and the future of humanity.", "categories": [34, 2], "publishYear": 1988}}}}
+
 
 Input: Title: "The Art of War", Author: "Sun Tzu"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Art of War is an ancient Chinese military treatise written by Sun Tzu in the 5th century BC. It is a foundational work on military strategy and tactics, influencing both Eastern and Western military thinking, business tactics, and legal strategy. The text emphasizes strategy, tactics, and manipulation as essential tools for success.", "categories": [5, 18], "publishYear": -500}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Art of War is an ancient Chinese military treatise written by Sun Tzu in the 5th century BC. It is a foundational work on military strategy and tactics, influencing both Eastern and Western military thinking, business tactics, and legal strategy. The text emphasizes strategy, tactics, and manipulation as essential tools for success.", "categories": [5, 18], "publishYear": -500}}}}
+
 
 Input: Title: "The Diary of a Young Girl", Author: "Anne Frank"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Diary of a Young Girl is a book of entries from the diary of Anne Frank, a Jewish girl who went into hiding with her family during the Nazi occupation of the Netherlands. Documenting her life from 1942 to 1944, it provides a personal account of the Holocaust and remains one of the most widely read works about wartime experiences.", "categories": [3, 18], "publishYear": 1947}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Diary of a Young Girl is a book of entries from the diary of Anne Frank, a Jewish girl who went into hiding with her family during the Nazi occupation of the Netherlands. Documenting her life from 1942 to 1944, it provides a personal account of the Holocaust and remains one of the most widely read works about wartime experiences.", "categories": [3, 18], "publishYear": 1947}}}}
+
 
 Input: Title: "The Hobbit", Author: "J.R.R. Tolkien"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Hobbit is a fantasy novel published in 1937, following the quest of Bilbo Baggins, a comfort-loving hobbit who embarks on an adventure with a group of dwarves. Set in Tolkien's fictional Middle-earth, the story combines adventure, mythology, and heroic quest themes. It serves as a prelude to The Lord of the Rings.", "categories": [17, 16], "publishYear": 1937}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Hobbit is a fantasy novel published in 1937, following the quest of Bilbo Baggins, a comfort-loving hobbit who embarks on an adventure with a group of dwarves. Set in Tolkien's fictional Middle-earth, the story combines adventure, mythology, and heroic quest themes. It serves as a prelude to The Lord of the Rings.", "categories": [17, 16], "publishYear": 1937}}}}
+
 
 Input: Title: "Sapiens: A Brief History of Humankind", Author: "Yuval Noah Harari"
-Output: {{"success": true, "error": null, "metadata": {{"description": "Sapiens is a non-fiction book that traces the history of humankind from the Stone Age to the present, examining how Homo sapiens came to dominate the planet. It explores the Cognitive Revolution, the Agricultural Revolution, and the Scientific Revolution, discussing the role of myths, religions, and nations in shaping human societies.", "categories": [18, 36], "publishYear": 2011}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "Sapiens is a non-fiction book that traces the history of humankind from the Stone Age to the present, examining how Homo sapiens came to dominate the planet. It explores the Cognitive Revolution, the Agricultural Revolution, and the Scientific Revolution, discussing the role of myths, religions, and nations in shaping human societies.", "categories": [18, 36], "publishYear": 2011}}}}
+
 
 Input: Title: "Thinking, Fast and Slow", Author: "Daniel Kahneman"
-Output: {{"success": true, "error": null, "metadata": {{"description": "Thinking, Fast and Slow is a 2011 book by Nobel laureate Daniel Kahneman that explores the two systems that drive the way we think: fast, intuitive thinking and slow, deliberate thinking. It examines human cognition, behavioral economics, rationality, and the systematic errors in human judgment.", "categories": [29, 5], "publishYear": 2011}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "Thinking, Fast and Slow is a 2011 book by Nobel laureate Daniel Kahneman that explores the two systems that drive the way we think: fast, intuitive thinking and slow, deliberate thinking. It examines human cognition, behavioral economics, rationality, and the systematic errors in human judgment.", "categories": [29, 5], "publishYear": 2011}}}}
+
 
 Input: Title: "The Origin of Species", Author: "Charles Darwin"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Origin of Species is a seminal work of scientific literature published in 1859 by Charles Darwin. It presents the theory of evolution by natural selection, explaining how species adapt and evolve over time. The book fundamentally changed our understanding of life on Earth and remains the foundation of modern evolutionary biology.", "categories": [4, 34], "publishYear": 1859}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Origin of Species is a seminal work of scientific literature published in 1859 by Charles Darwin. It presents the theory of evolution by natural selection, explaining how species adapt and evolve over time. The book fundamentally changed our understanding of life on Earth and remains the foundation of modern evolutionary biology.", "categories": [4, 34], "publishYear": 1859}}}}
+
 
 Input: Title: "The Road to Serfdom", Author: "Friedrich Hayek"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Road to Serfdom is a book written by economist Friedrich Hayek in 1944, arguing that reliance on central planning leads to the loss of freedom and eventual totalitarian regimes. It is a classic critique of socialism and a defense of classical liberalism and the free market.", "categories": [5, 36], "publishYear": 1944}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Road to Serfdom is a book written by economist Friedrich Hayek in 1944, arguing that reliance on central planning leads to the loss of freedom and eventual totalitarian regimes. It is a classic critique of socialism and a defense of classical liberalism and the free market.", "categories": [5, 36], "publishYear": 1944}}}}
+
 
 Input: Title: "Meditations", Author: "Marcus Aurelius"
-Output: {{"success": true, "error": null, "metadata": {{"description": "Meditations is a series of personal writings by Roman Emperor Marcus Aurelius, written in Greek during his military campaigns. The work represents Stoic philosophy in practice, offering guidance on self-discipline, resilience, and living in accordance with reason and nature.", "categories": [31, 36], "publishYear": 180}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "Meditations is a series of personal writings by Roman Emperor Marcus Aurelius, written in Greek during his military campaigns. The work represents Stoic philosophy in practice, offering guidance on self-discipline, resilience, and living in accordance with reason and nature.", "categories": [31, 36], "publishYear": 180}}}}
+
 
 Input: Title: "The Great Gatsby", Author: "F. Scott Fitzgerald"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Great Gatsby is a novel published in 1925, set in the Jazz Age on Long Island. It follows the mysterious millionaire Jay Gatsby and his obsessive pursuit of Daisy Buchanan. Through the tragic结局, Fitzgerald explores themes of wealth, love, idealism, and the American Dream.", "categories": [16], "publishYear": 1925}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Great Gatsby is a novel published in 1925, set in the Jazz Age on Long Island. It follows the mysterious millionaire Jay Gatsby and his obsessive pursuit of Daisy Buchanan. Through the tragic结局, Fitzgerald explores themes of wealth, love, idealism, and the American Dream.", "categories": [16], "publishYear": 1925}}}}
+
 
 Input: Title: "The Odyssey", Author: "Homer"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Odyssey is an ancient Greek epic poem attributed to Homer, composed around the 8th century BC. It follows the Greek hero Odysseus on his ten-year journey home after the Trojan War. The poem is a cornerstone of Western literature, dealing with themes of homecoming, heroism, and divine intervention.", "categories": [28, 16], "publishYear": -800}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Odyssey is an ancient Greek epic poem attributed to Homer, composed around the 8th century BC. It follows the Greek hero Odysseus on his ten-year journey home after the Trojan War. The poem is a cornerstone of Western literature, dealing with themes of homecoming, heroism, and divine intervention.", "categories": [28, 16], "publishYear": -800}}}}
+
 
 Input: Title: "The Prince", Author: "Niccolò Machiavelli"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Prince is a political treatise written by Niccolò Machiavelli in 1513, offering advice on acquiring and maintaining power. It is famous for its pragmatic approach to politics, advocating that rulers should be willing to act immorally if necessary. The work is foundational in Western political philosophy.", "categories": [36, 20], "publishYear": 1532}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Prince is a political treatise written by Niccolò Machiavelli in 1513, offering advice on acquiring and maintaining power. It is famous for its pragmatic approach to politics, advocating that rulers should be willing to act immorally if necessary. The work is foundational in Western political philosophy.", "categories": [36, 20], "publishYear": 1532}}}}
+
 
 Input: Title: "To Kill a Mockingbird", Author: "Harper Lee"
-Output: {{"success": true, "error": null, "metadata": {{"description": "To Kill a Mockingbird is a novel published in 1960, set in the American South during the Great Depression. Through the eyes of young Scout Finch, it follows her father Atticus Finch, a lawyer defending a Black man falsely accused of rape. The novel addresses racial injustice, moral courage, and the loss of innocence.", "categories": [16], "publishYear": 1960}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "To Kill a Mockingbird is a novel published in 1960, set in the American South during the Great Depression. Through the eyes of young Scout Finch, it follows her father Atticus Finch, a lawyer defending a Black man falsely accused of rape. The novel addresses racial injustice, moral courage, and the loss of innocence.", "categories": [16], "publishYear": 1960}}}}
+
 
 Input: Title: "The Selfish Gene", Author: "Richard Dawkins"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Selfish Gene is a popular science book published in 1976 by Richard Dawkins. It presents the gene-centered view of evolution, arguing that genes are the primary unit of selection in evolution. The book explains how genes shape behavior, cooperation, and altruism in living organisms.", "categories": [4, 34], "publishYear": 1976}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Selfish Gene is a popular science book published in 1976 by Richard Dawkins. It presents the gene-centered view of evolution, arguing that genes are the primary unit of selection in evolution. The book explains how genes shape behavior, cooperation, and altruism in living organisms.", "categories": [4, 34], "publishYear": 1976}}}}
+
 
 Input: Title: "Crime and Punishment", Author: "Fyodor Dostoevsky"
-Output: {{"success": true, "error": null, "metadata": {{"description": "Crime and Punishment is a novel published in 1866 by Fyodor Dostoevsky, exploring the psychological and moral struggles of Rodion Raskolnikov, a destitute former student in Saint Petersburg who commits murder and wrestles with his conscience. The book delves deeply into guilt, suffering, redemption, and the nature of justice.", "categories": [16, 29], "publishYear": 1866}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "Crime and Punishment is a novel published in 1866 by Fyodor Dostoevsky, exploring the psychological and moral struggles of Rodion Raskolnikov, a destitute former student in Saint Petersburg who commits murder and wrestles with his conscience. The book delves deeply into guilt, suffering, redemption, and the nature of justice.", "categories": [16, 29], "publishYear": 1866}}}}
+
 
 Input: Title: "The Joy of Cooking", Author: "Irma S. Rombauer"
-Output: {{"success": true, "error": null, "metadata": {{"description": "The Joy of Cooking is a bestselling cookbook first published in 1936 by Irma S. Rombauer. It contains recipes, cooking techniques, and kitchen tips. Originally a self-published book, it became one of the most widely read cookbooks in the United States, undergoing multiple revisions and editions.", "categories": [11], "publishYear": 1936}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "The Joy of Cooking is a bestselling cookbook first published in 1936 by Irma S. Rombauer. It contains recipes, cooking techniques, and kitchen tips. Originally a self-published book, it became one of the most widely read cookbooks in the United States, undergoing multiple revisions and editions.", "categories": [11], "publishYear": 1936}}}}
+
 
 Input: Title: "On the Origin of Species", Author: "Charles Darwin"
-Output: {{"success": true, "error": null, "metadata": {{"description": "On the Origin of Species is a seminal work of scientific literature published in 1859 by Charles Darwin. It presents the theory of evolution by natural selection, explaining how species adapt and evolve over generations. This foundational text transformed biology and our understanding of life on Earth.", "categories": [4, 34], "publishYear": 1859}}}
+Output: {{"success": true, "error": null, "metadata": {{"description": "On the Origin of Species is a seminal work of scientific literature published in 1859 by Charles Darwin. It presents the theory of evolution by natural selection, explaining how species adapt and evolve over generations. This foundational text transformed biology and our understanding of life on Earth.", "categories": [4, 34], "publishYear": 1859}}}}
+
 
 Input: Title: "Unknown Book XYZ", Author: "Nonexistent Author"
 Output: {{"success": false, "error": "Cannot find reliable information about this book", "metadata": null}}
