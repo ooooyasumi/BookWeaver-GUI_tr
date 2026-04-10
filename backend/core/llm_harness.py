@@ -285,6 +285,9 @@ def _extract_json(text: str) -> str:
     import re
     text = re.sub(r"\n*<think>[\s\S]*?</think>", "", text)
     text = re.sub(r"<thinking>[\s\S]*?</thinking>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<\|(?:thought|thinking)[^>]*>[\s\S]*?<\|/(?:thought|thinking)>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\[/?(?:thought|thinking)\]", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<</?[a-z_]+>>", "", text, flags=re.IGNORECASE)
     text = text.strip()
 
     # 移除 markdown 代码块
@@ -534,6 +537,12 @@ async def call_llm_batch(
 
             data = response.json()
             content = data["choices"][0]["message"]["content"]
+
+            if content is None:
+                return [{
+                    "success": False,
+                    "error": "LLM returned empty response"
+                } for _ in books]
 
             return parse_batch_response(content, len(books))
 

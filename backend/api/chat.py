@@ -240,6 +240,9 @@ async def chat(request: ChatRequest):
             import re
             plan_text = re.sub(r"\n*<think>[\s\S]*?</think>", "", plan_text)
             plan_text = re.sub(r"<thinking>[\s\S]*?</thinking>", "", plan_text, flags=re.IGNORECASE)
+            plan_text = re.sub(r"<\|(?:thought|thinking)[^>]*>[\s\S]*?<\|/(?:thought|thinking)>", "", plan_text, flags=re.IGNORECASE)
+            plan_text = re.sub(r"\[/?(?:thought|thinking)\]", "", plan_text, flags=re.IGNORECASE)
+            plan_text = re.sub(r"<</?[a-z_]+>>", "", plan_text, flags=re.IGNORECASE)
             plan_text = plan_text.strip()
 
             # 解析 JSON 计划（LLM 有时会包裹在代码块里）
