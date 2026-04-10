@@ -267,12 +267,13 @@ def validate_metadata(metadata: dict) -> tuple[bool, Optional[str]]:
             return False, f"invalid category id: {cat}"
 
     # 验证年份
+    # 接受：公元 1-9999，或公元前 -1 to -3000 (如 -375, -500)
     year = metadata.get("publishYear")
     if not isinstance(year, int):
         return False, "publishYear must be an integer"
 
-    if year < 1000 or year > 9999:
-        return False, f"publishYear must be 4-digit, got {year}"
+    if not ((year >= 1 and year <= 9999) or (year >= -3000 and year <= -1)):
+        return False, f"publishYear must be 1-9999 (AD) or -1 to -3000 (BC), got {year}"
 
     return True, None
 
