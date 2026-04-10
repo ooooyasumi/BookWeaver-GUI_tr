@@ -29,7 +29,7 @@ interface Config {
 }
 
 const LLM_MODELS = [
-  { label: 'MiniMax M2', value: 'MiniMax-M2' },
+  { label: 'MiniMax-M2.7', value: 'MiniMax-M2' },
   { label: 'Qwen 3.5 Plus', value: 'qwen3.5-plus' },
   { label: 'Qwen 3.5 Turbo', value: 'qwen3.5-turbo' },
   { label: 'Qwen VL Flash', value: 'qwen3-vl-flash-2026-01-22' },
@@ -46,7 +46,7 @@ const LLM_MODELS = [
 const PRESET_MODELS = [
   {
     id: 'minimax',
-    label: 'MiniMax M2',
+    label: 'MiniMax-M2.7',
     apiKey: 'sk-cp-AyOemkvi0hh2K6tG1mN5c8PJCQaWbFNbPD3BDCAGx6XpSNVbFyvRyl2qMGEkotu334SJDxpkikqR7-mHuzaD1URXHsAvhG_JiLzEbqiPgiHyRmZVVJNDRcg',
     model: 'MiniMax-M2',
     baseUrl: 'https://api.minimaxi.com/v1',
