@@ -222,9 +222,8 @@ async def chat(request: ChatRequest):
         try:
             # ── Phase 1: PLAN ──────────────────────────────────────────────
             plan_messages = [
-                {"role": "system", "content": PLAN_SYSTEM_PROMPT},
                 *build_history_messages(request.history),
-                {"role": "user", "content": request.message}
+                {"role": "user", "content": PLAN_SYSTEM_PROMPT + "\n\n用户需求：" + request.message}
             ]
 
             plan_response = client.chat.completions.create(
@@ -259,9 +258,8 @@ async def chat(request: ChatRequest):
             # ── 普通对话（不需要搜书）──────────────────────────────────────
             if plan.get("type") != "search_task":
                 chat_messages = [
-                    {"role": "system", "content": REPLY_SYSTEM_PROMPT},
                     *build_history_messages(request.history),
-                    {"role": "user", "content": request.message}
+                    {"role": "user", "content": REPLY_SYSTEM_PROMPT + "\n\n用户消息：" + request.message}
                 ]
                 chat_response = client.chat.completions.create(
                     model=request.config.model,
@@ -344,11 +342,10 @@ async def chat(request: ChatRequest):
             # ── Phase 4: REPLY ─────────────────────────────────────────────
             # 让 LLM 生成一句自然语言总结
             reply_messages = [
-                {"role": "system", "content": REPLY_SYSTEM_PROMPT},
                 *build_history_messages(request.history),
-                {"role": "user", "content": request.message},
+                {"role": "user", "content": REPLY_SYSTEM_PROMPT + "\n\n用户消息：" + request.message},
                 {
-                    "role": "system",
+                    "role": "user",
                     "content": (
                         f"任务已完成。实际加入列表的书籍数量为 {final_count} 本"
                         f"（目标 {target_count} 本）。"
