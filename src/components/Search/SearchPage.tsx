@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Input, Button, Space, message, Checkbox, Drawer, Card, Segmented } from 'antd'
+import { Input, Button, Space, message, Checkbox, Drawer, Card, Segmented, Collapse } from 'antd'
 import { SearchOutlined, MessageOutlined, SendOutlined, PlusOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookList } from '../Common/BookList'
@@ -14,9 +14,36 @@ const API_BASE = window.location.protocol === 'file:'
 // 搜索类型
 type SearchType = 'title' | 'author' | 'subject' | 'year'
 
+// 从文本中提取思考块并移除
+function extractThinking(text: string): { content: string; thinking: string | undefined } {
+  // 匹配各种思考块格式
+  const thinkingPatterns = [
+    /\n*<think>[\s\S]*?<\/think>/gi,
+    /<thinking>[\s\S]*?<\/thinking>/gi,
+    /<\/?(?:thought|thinking)[^>]*>[\s\S]*?<\/?(?:thought|thinking)>/gi,
+    /\[\/?(?:thought|thinking)\][\s\S]*?\[\/?(?:thought|thinking)\]/gi,
+    /<<[^>]+>>[\s\S]*?<<\/[^>]+>>/gi,
+  ]
+
+  let thinking: string | undefined
+  let content = text
+
+  for (const pattern of thinkingPatterns) {
+    const match = content.match(pattern)
+    if (match) {
+      thinking = match[0]
+      content = content.replace(pattern, '')
+      break
+    }
+  }
+
+  return { content: content.trim(), thinking: thinking?.trim() }
+}
+
 interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
+  thinking?: string
   type?: 'normal' | 'tool_status' | 'tool_result'
 }
 
@@ -307,11 +334,13 @@ export function SearchPage() {
 
               if (event.type === 'token') {
                 assistantContent += event.content
+                // 提取思考块
+                const { content: cleanContent, thinking } = extractThinking(assistantContent)
                 if (replyMsgIdx === -1) {
                   // 第一个 token：新建回复消息
                   replyMsgIdx = aiMessagesRef.current.length
                   setAiMessages(prev => {
-                    const next = [...prev, { role: 'assistant' as const, content: assistantContent, type: 'normal' as const }]
+                    const next = [...prev, { role: 'assistant' as const, content: cleanContent, thinking, type: 'normal' as const }]
                     aiMessagesRef.current = next
                     return next
                   })
@@ -320,7 +349,7 @@ export function SearchPage() {
                   setAiMessages(prev => {
                     const msgs = [...prev]
                     if (replyMsgIdx >= 0 && replyMsgIdx < msgs.length) {
-                      msgs[replyMsgIdx] = { role: 'assistant', content: assistantContent, type: 'normal' }
+                      msgs[replyMsgIdx] = { role: 'assistant', content: cleanContent, thinking, type: 'normal' }
                     }
                     aiMessagesRef.current = msgs
                     return msgs
@@ -584,6 +613,18 @@ export function SearchPage() {
                   textAlign: msg.role === 'user' ? 'right' : 'left'
                 }}
               >
+                {msg.thinking && (
+                  <Collapse
+                    ghost
+                    size="small"
+                    style={{ marginBottom: 4 }}
+                    items={[{
+                      key: 'thinking',
+                      label: <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>🤔 思考过程</span>,
+                      children: <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, fontFamily: 'inherit', color: 'var(--text-secondary)' }}>{msg.thinking}</pre>
+                    }]}
+                  />
+                )}
                 <div
                   className={msg.role === 'user' ? 'ai-message-user' : msg.type === 'tool_status' ? 'ai-message-tool-status' : msg.type === 'tool_result' ? 'ai-message-tool-result' : 'ai-message-assistant'}
                   style={{
