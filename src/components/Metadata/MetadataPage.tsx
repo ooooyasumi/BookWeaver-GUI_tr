@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Card, Button, Space, Checkbox, message, Spin, Progress, Tag, Typography } from 'antd'
+import { Card, Button, Space, Checkbox, message, Spin, Progress, Tag, Typography, Tooltip } from 'antd'
 import { SyncOutlined, StopOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookDetailDrawer, formatFileSize, BookInfo } from '../Common/BookDetailDrawer'
@@ -99,7 +99,9 @@ function BookItem({
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: 12 }}>
         {book.metadataError && (
-          <Tag color="error" style={{ margin: 0 }}>元数据失败</Tag>
+          <Tooltip title={book.metadataError}>
+            <Tag color="error" style={{ margin: 0 }}>元数据失败</Tag>
+          </Tooltip>
         )}
         {book.subjects && book.subjects.length > 0 && (
           <Tag style={{ margin: 0, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
