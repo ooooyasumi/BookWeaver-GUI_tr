@@ -261,6 +261,12 @@ def _extract_json(text: str) -> str:
     """从文本中提取 JSON 字符串，支持多种格式."""
     text = text.strip()
 
+    # 移除思考块（如 MiniMax 等模型的 <thinking>... 或 \n<think>...</think>）
+    import re
+    text = re.sub(r"\n*<think>[\s\S]*?</think>", "", text)
+    text = re.sub(r"<thinking>[\s\S]*?</thinking>", "", text, flags=re.IGNORECASE)
+    text = text.strip()
+
     # 移除 markdown 代码块
     if text.startswith("```json"):
         text = text[7:]
@@ -278,7 +284,6 @@ def _extract_json(text: str) -> str:
         pass
 
     # 尝试在文本中找 JSON 对象或数组
-    import re
     # 找 JSON 对象
     m = re.search(r"\{[\s\S]*\}", text)
     if m:

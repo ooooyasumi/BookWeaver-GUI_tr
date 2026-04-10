@@ -228,10 +228,15 @@ async def chat(request: ChatRequest):
 
             plan_text = (plan_response.choices[0].message.content or "").strip()
 
+            # 移除思考块（如 MiniMax 等模型的 \n<think>...</think> 或 <thinking>...）
+            import re
+            plan_text = re.sub(r"\n*<think>[\s\S]*?</think>", "", plan_text)
+            plan_text = re.sub(r"<thinking>[\s\S]*?</thinking>", "", plan_text, flags=re.IGNORECASE)
+            plan_text = plan_text.strip()
+
             # 解析 JSON 计划（LLM 有时会包裹在代码块里）
             plan_text_clean = plan_text
             if "```" in plan_text:
-                import re
                 m = re.search(r"```(?:json)?\s*([\s\S]+?)```", plan_text)
                 if m:
                     plan_text_clean = m.group(1).strip()
