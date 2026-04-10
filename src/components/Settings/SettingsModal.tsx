@@ -3,6 +3,7 @@ import { Modal, Form, Input, AutoComplete, InputNumber, Button, Space, Divider, 
 import { SettingOutlined, SaveOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, MoonOutlined, LockOutlined, EditOutlined, BugOutlined } from '@ant-design/icons'
 import { useTheme } from '../../contexts/ThemeContext'
 import { VersionLink } from './VersionHistory'
+import { LogConsole } from './LogConsole'
 
 interface SettingsModalProps {
   open: boolean
@@ -67,15 +68,6 @@ const PRESET_MODELS = [
   },
 ]
 
-// 写死的默认配置
-const PRESET_LLM: LLMConfig = {
-  apiKey: 'sk-94165d0f233b417da98b6515dcc63ada',
-  model: 'qwen3.5-flash',
-  baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-  temperature: 0.7,
-  maxTokens: 2000,
-}
-
 const DEFAULT_CONFIG: Config = {
   llm: {
     apiKey: '',
@@ -108,6 +100,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const apiKey = Form.useWatch(['llm', 'apiKey'], form)
   const baseUrl = Form.useWatch(['llm', 'baseUrl'], form)
   const model = Form.useWatch(['llm', 'model'], form)
+  const debugMode = Form.useWatch(['debugMode'], form)
   const canTest = llmMode === 'preset' || !!(apiKey?.trim() && baseUrl?.trim() && model?.trim())
 
   // 加载配置
@@ -479,6 +472,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             </Row>
           </Form>
         </div>
+
+        {/* 调试日志终端 */}
+        <LogConsole visible={!!debugMode} />
       </div>
 
       {/* 底部按钮 */}

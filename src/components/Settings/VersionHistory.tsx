@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Modal, Typography } from 'antd'
 import { HistoryOutlined } from '@ant-design/icons'
 
