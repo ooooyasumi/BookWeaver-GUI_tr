@@ -264,6 +264,19 @@ async def update_metadata_for_files(
                     })
 
                 metadata = llm_result["metadata"]
+
+                # 作者必填校验
+                if not metadata.get("author") or not metadata["author"].strip():
+                    error = "缺少作者"
+                    update_file_metadata_status(workspace_path, file_info["filePath"], updated=False, error=error)
+                    batch_results.append({
+                        "filePath": file_info["filePath"],
+                        "title": file_info["title"],
+                        "success": False,
+                        "error": error,
+                    })
+                    continue
+
                 success, error = update_epub_metadata(file_info["filePath"], metadata)
 
                 if success:
