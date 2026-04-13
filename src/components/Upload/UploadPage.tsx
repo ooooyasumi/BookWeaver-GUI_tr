@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Card, Button, Space, Checkbox, message, Spin, Progress, Tag, Typography, Select, Tooltip } from 'antd'
+import { Card, Button, Space, Checkbox, message, Spin, Tag, Typography, Select, Tooltip } from 'antd'
 import {
-  CloudUploadOutlined, StopOutlined, CheckCircleOutlined,
+  CloudUploadOutlined, CheckCircleOutlined,
   FileTextOutlined, ExclamationCircleOutlined, CloseCircleOutlined,
 } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookDetailDrawer, formatFileSize, BookInfo } from '../Common/BookDetailDrawer'
+import { TaskProgressCard } from '../Common/TaskProgressCard'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
 import { BookFilter, FilterKey, matchesFilter, BookWithAllStatus } from '../Common/BookFilter'
 
@@ -339,16 +340,6 @@ export function UploadPage() {
     setDetailDrawerOpen(true)
   }
 
-  // 阶段描述
-  const getStageText = (stage?: string) => {
-    switch (stage) {
-      case 'uploading_cover': return '上传封面'
-      case 'uploading_epub': return '上传文件'
-      case 'adding_book': return '添加记录'
-      default: return '处理中'
-    }
-  }
-
   const pendingCount = allBooks.filter(b => b._status !== 'uploaded').length
 
   if (loading) {
@@ -399,50 +390,21 @@ export function UploadPage() {
               disabled={isRunning}
             />
 
-            {isRunning ? (
-              <>
-                <Progress
-                  type="circle"
-                  percent={progress?.total ? Math.round(((progress.success || 0) + (progress.failed || 0) + (progress.skipped || 0)) / progress.total * 100) : 0}
-                  size={32}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
-                  <span style={{ fontSize: 13 }}>
-                    {(progress?.success || 0) + (progress?.failed || 0) + (progress?.skipped || 0)}/{progress?.total || 0}
-                  </span>
-                  {progress?.bookTitle && (
-                    <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-                      {getStageText(progress?.stage)} - {progress.bookTitle.length > 20 ? progress.bookTitle.slice(0, 20) + '...' : progress.bookTitle}
-                    </span>
-                  )}
-                </div>
-                <Button
-                  danger
-                  icon={<StopOutlined />}
-                  onClick={cancelTask}
-                >
-                  取消
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  type="primary"
-                  icon={<CloudUploadOutlined />}
-                  onClick={() => startUpload()}
-                  disabled={selected.size === 0}
-                >
-                  上传选中 ({selected.size})
-                </Button>
-                <Button
-                  icon={<CloudUploadOutlined />}
-                  onClick={uploadAll}
-                  disabled={pendingCount === 0}
-                >
-                  全部上传
-                </Button>
-              </>
-            )}
+            <Button
+              type="primary"
+              icon={<CloudUploadOutlined />}
+              onClick={() => startUpload()}
+              disabled={selected.size === 0}
+            >
+              上传选中 ({selected.size})
+            </Button>
+            <Button
+              icon={<CloudUploadOutlined />}
+              onClick={uploadAll}
+              disabled={pendingCount === 0}
+            >
+              全部上传
+            </Button>
           </Space>
         </div>
 
@@ -451,6 +413,15 @@ export function UploadPage() {
           <BookFilter filters={filters} onChange={setFilters} />
         </div>
       </Card>
+
+      {/* 运行中进度卡片 */}
+      {isRunning && (
+        <TaskProgressCard
+          type="upload"
+          progress={progress}
+          onCancel={cancelTask}
+        />
+      )}
 
       {/* 书籍列表 */}
       <Card

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Card, Button, Space, Checkbox, message, Spin, Progress, Slider, Typography, Modal } from 'antd'
-import { PictureOutlined, SyncOutlined, StopOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Card, Button, Space, Checkbox, message, Spin, Slider, Typography, Modal } from 'antd'
+import { PictureOutlined, SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
+import { TaskProgressCard } from '../Common/TaskProgressCard'
 import { BookFilter, FilterKey, matchesFilter, BookWithAllStatus } from '../Common/BookFilter'
 
 const { Text } = Typography
@@ -513,65 +514,58 @@ export function CoverPage() {
           </Space>
 
           <Space>
-            {isRunning ? (
-              <>
-                <Progress
-                  type="circle"
-                  percent={progress?.total ? Math.round(((progress.success || 0) + (progress.failed || 0)) / progress.total * 100) : 0}
-                  size={32}
-                />
-                <span>
-                  {(progress?.success || 0) + (progress?.failed || 0)}/{progress?.total || 0}
-                </span>
-                <Button danger icon={<StopOutlined />} onClick={cancelTask}>
-                  停止
-                </Button>
-              </>
-            ) : (
-              <>
-                <Checkbox
-                  checked={isAllSelected}
-                  indeterminate={isIndeterminate}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                >
-                  全选
-                </Checkbox>
-                <Button
-                  type="primary"
-                  icon={<SyncOutlined />}
-                  onClick={() => startUpdate()}
-                  disabled={selected.size === 0}
-                >
-                  更新封面 ({selected.size})
-                </Button>
-                <Button
-                  icon={<SyncOutlined />}
-                  onClick={updateAll}
-                  disabled={!status?.notUpdatedFiles.length}
-                >
-                  全部更新
-                </Button>
-                <Button onClick={resetStatus}>
-                  重置状态
-                </Button>
-                {selected.size > 0 && (
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={handleDelete}
-                    loading={deleting}
-                  >
-                    删除 ({selected.size})
-                  </Button>
-                )}
-              </>
+            <Checkbox
+              checked={isAllSelected}
+              indeterminate={isIndeterminate}
+              onChange={(e) => handleSelectAll(e.target.checked)}
+            >
+              全选
+            </Checkbox>
+            <Button
+              type="primary"
+              icon={<SyncOutlined />}
+              onClick={() => startUpdate()}
+              disabled={selected.size === 0}
+            >
+              更新封面 ({selected.size})
+            </Button>
+            <Button
+              icon={<SyncOutlined />}
+              onClick={updateAll}
+              disabled={!status?.notUpdatedFiles.length}
+            >
+              全部更新
+            </Button>
+            <Button onClick={resetStatus}>
+              重置状态
+            </Button>
+            {selected.size > 0 && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={handleDelete}
+                loading={deleting}
+              >
+                删除 ({selected.size})
+              </Button>
             )}
           </Space>
+        </div>
 
-          {/* 筛选栏 */}
+        {/* 筛选栏 */}
+        <div style={{ marginTop: 12 }}>
           <BookFilter filters={filters} onChange={setFilters} />
         </div>
       </Card>
+
+      {/* 运行中进度卡片 */}
+      {isRunning && (
+        <TaskProgressCard
+          type="cover"
+          progress={progress}
+          onCancel={cancelTask}
+        />
+      )}
 
       {/* 列数调整 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, padding: '0 4px' }}>

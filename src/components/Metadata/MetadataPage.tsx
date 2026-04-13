@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Card, Button, Space, Checkbox, message, Spin, Progress, Tag, Typography, Tooltip } from 'antd'
-import { SyncOutlined, StopOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Card, Button, Space, Checkbox, message, Spin, Tag, Typography, Tooltip } from 'antd'
+import { SyncOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { BookDetailDrawer, formatFileSize, BookInfo } from '../Common/BookDetailDrawer'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
 import { BookFilter, FilterKey, matchesFilter, BookWithAllStatus } from '../Common/BookFilter'
+import { TaskProgressCard } from '../Common/TaskProgressCard'
 
 const { Text } = Typography
 
@@ -341,46 +342,24 @@ export function MetadataPage() {
           </Space>
 
           <Space>
-            {isRunning ? (
-              <>
-                <Progress
-                  type="circle"
-                  percent={progress?.total ? Math.round(((progress.success || 0) + (progress.failed || 0)) / progress.total * 100) : 0}
-                  size={32}
-                />
-                <span>
-                  { (progress?.success || 0) + (progress?.failed || 0) }/{ progress?.total || 0 }
-                </span>
-                <Button
-                  danger
-                  icon={<StopOutlined />}
-                  onClick={cancelTask}
-                >
-                  取消
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  type="primary"
-                  icon={<SyncOutlined />}
-                  onClick={() => startUpdate()}
-                  disabled={selected.size === 0}
-                >
-                  更新选中 ({selected.size})
-                </Button>
-                <Button
-                  icon={<SyncOutlined />}
-                  onClick={updateAll}
-                  disabled={!status?.notUpdatedFiles.length}
-                >
-                  全部更新
-                </Button>
-                <Button onClick={resetStatus}>
-                  重置状态
-                </Button>
-              </>
-            )}
+            <Button
+              type="primary"
+              icon={<SyncOutlined />}
+              onClick={() => startUpdate()}
+              disabled={selected.size === 0}
+            >
+              更新选中 ({selected.size})
+            </Button>
+            <Button
+              icon={<SyncOutlined />}
+              onClick={updateAll}
+              disabled={!status?.notUpdatedFiles.length}
+            >
+              全部更新
+            </Button>
+            <Button onClick={resetStatus}>
+              重置状态
+            </Button>
           </Space>
         </div>
 
@@ -396,6 +375,15 @@ export function MetadataPage() {
           <BookFilter filters={filters} onChange={setFilters} />
         </div>
       </Card>
+
+      {/* 运行中进度卡片 */}
+      {isRunning && (
+        <TaskProgressCard
+          type="metadata"
+          progress={progress}
+          onCancel={cancelTask}
+        />
+      )}
 
       {/* 书籍列表 */}
       <Card
