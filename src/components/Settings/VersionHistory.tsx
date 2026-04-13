@@ -12,10 +12,21 @@ interface VersionEntry {
   changed: string[]
 }
 
-const CURRENT_VERSION = '0.6.7'
+const CURRENT_VERSION = '0.6.8'
 
 // 内嵌的版本历史数据（与 CHANGELOG.md 保持同步）
 const VERSION_HISTORY: VersionEntry[] = [
+  {
+    version: '0.6.8',
+    date: '2026-04-13',
+    added: [
+      '元数据作者补全：原书无作者时，LLM 自动识别并写入作者；LLM 也无法识别时报错"缺少作者"',
+    ],
+    fixed: [
+      '元数据作者校验逻辑：原书有作者时直接放行，不再错误检查 LLM 返回值导致全部失败',
+    ],
+    changed: [],
+  },
   {
     version: '0.6.7',
     date: '2026-04-13',
