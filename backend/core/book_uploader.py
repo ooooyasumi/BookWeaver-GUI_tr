@@ -71,28 +71,48 @@ ENVIRONMENTS = {
 MAX_RETRIES = 3
 RETRY_DELAY = 2
 
-# 支持的语言
+# 支持的语言（云控平台支持的语言列表）
 SUPPORTED_LANGUAGES = [
-    'Amharic', 'Arabic', 'English', 'French',
-    'Portuguese', 'Swahil', 'Hindi',
+    'Amharic', 'Arabic', 'Chinese', 'Dutch', 'English', 'French',
+    'German', 'Hindi', 'Italian', 'Japanese', 'Korean', 'Polish',
+    'Portuguese', 'Russian', 'Spanish', 'Swahili', 'Swedish',
 ]
 
 # 语言代码 → 后端语言名称
 LANGUAGE_MAP = {
+    # 非洲
     'am': 'Amharic', 'amh': 'Amharic',
+    'sw': 'Swahili', 'swa': 'Swahili',
+    # 阿拉伯
     'ar': 'Arabic', 'ara': 'Arabic',
+    # 中文
+    'zh': 'Chinese', 'zho': 'Chinese',
+    # 荷兰语
+    'nl': 'Dutch', 'dut': 'Dutch',
+    # 英语
     'en': 'English', 'eng': 'English',
+    # 法语
     'fr': 'French', 'fra': 'French',
-    'pt': 'Portuguese', 'por': 'Portuguese',
-    'sw': 'Swahil', 'swa': 'Swahil',
+    # 德语
+    'de': 'German', 'deu': 'German',
+    # 印地语
     'hi': 'Hindi', 'hin': 'Hindi',
-    'es': 'English', 'spa': 'English',
-    'de': 'English', 'deu': 'English',
-    'it': 'English', 'ita': 'English',
-    'ja': 'English', 'jpn': 'English',
-    'ko': 'English', 'kor': 'English',
-    'zh': 'English', 'zho': 'English',
-    'ru': 'English', 'rus': 'English',
+    # 意大利语
+    'it': 'Italian', 'ita': 'Italian',
+    # 日语
+    'ja': 'Japanese', 'jpn': 'Japanese',
+    # 韩语
+    'ko': 'Korean', 'kor': 'Korean',
+    # 波兰语
+    'pl': 'Polish', 'pol': 'Polish',
+    # 葡萄牙语
+    'pt': 'Portuguese', 'por': 'Portuguese',
+    # 俄语
+    'ru': 'Russian', 'rus': 'Russian',
+    # 西班牙语
+    'es': 'Spanish', 'spa': 'Spanish',
+    # 瑞典语
+    'sv': 'Swedish', 'swe': 'Swedish',
 }
 
 # 分类名称 → 后端 ID（从 CATEGORY_MAP 反转：CATEGORY_MAP 是 id_str -> name）
