@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2026-04-13
+
+### Fixed
+
+- **上传编码错误**：EPUB 元数据提取和上传前对书名/作者/简介做 clean_text 清洗，移除 emoji 和特殊符号，避免 gbk 编码错误导致上传卡死
+
 ## [0.6.3] - 2026-04-13
 
 ### Added
