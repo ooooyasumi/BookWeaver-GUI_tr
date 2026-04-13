@@ -12,7 +12,7 @@ interface VersionEntry {
   changed: string[]
 }
 
-const CURRENT_VERSION = '0.6.5'
+const CURRENT_VERSION = '0.6.6'
 
 // 内嵌的版本历史数据（与 CHANGELOG.md 保持同步）
 const VERSION_HISTORY: VersionEntry[] = [

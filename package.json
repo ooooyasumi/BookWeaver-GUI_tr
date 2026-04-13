@@ -1,6 +1,6 @@
 {
   "name": "bookweaver-gui",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "description": "Project Gutenberg 书籍下载工具 - GUI 版本",
   "main": "dist-electron/main.js",
   "scripts": {

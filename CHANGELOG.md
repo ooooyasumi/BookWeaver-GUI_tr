@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.6] - 2026-04-13
+
+### Added
+
+- **非英语书籍搜索**：搜索页新增语言筛选器（15种语言），AI助手支持多语言语义理解
+
+### Fixed
+
+- **LANGUAGE_MAP 修正**：es→Spanish、de→German、zh→Chinese 等，非英语书籍正确设置语言字段
+- **元数据作者校验**：LLM返回空作者时标记为更新失败，保证数据完整性
+
+### Perf
+
+- **元数据实时显示**：每批次完成后实时追加到列表，无需全部完成才刷新
+- **上传并发执行**：Semaphore控制最多3本并发，asyncio.Lock保证计数准确
+
 ## [0.6.5] - 2026-04-13
 
 ### Fixed
