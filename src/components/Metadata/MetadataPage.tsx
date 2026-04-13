@@ -132,6 +132,8 @@ export function MetadataPage() {
   // 状态
   const [status, setStatus] = useState<MetadataStatus | null>(null)
   const [loading, setLoading] = useState(true)
+  // 实时更新的已处理批次（增量显示用）
+  const [processedBatch, setProcessedBatch] = useState<FileInfo[]>([])
 
   // 选中
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -143,11 +145,13 @@ export function MetadataPage() {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [selectedBook, setSelectedBook] = useState<BookInfo | null>(null)
 
-  // 合并所有书籍
+  // 合并所有书籍（processedBatch 实时增量追加）
   const allBooks = useMemo(() => {
     if (!status) return []
-    return [...status.notUpdatedFiles, ...status.updatedFiles]
-  }, [status])
+    const processedPaths = new Set(processedBatch.map(b => b.filePath))
+    const notUpdated = status.notUpdatedFiles.filter(f => !processedPaths.has(f.filePath))
+    return [...status.updatedFiles, ...processedBatch, ...notUpdated]
+  }, [status, processedBatch])
 
   // 筛选后的书籍
   const filteredBooks = useMemo(
@@ -201,6 +205,9 @@ export function MetadataPage() {
 
     const config = await window.electronAPI.getConfig()
 
+    // 开始前清空上次的增量结果
+    setProcessedBatch([])
+
     const controller = new AbortController()
     await setActiveTask({
       id: Date.now().toString(),
@@ -240,6 +247,18 @@ export function MetadataPage() {
             try {
               const data = JSON.parse(line.slice(6))
               updateActiveTask(prev => ({ progress: { ...(prev?.progress || {}), ...data } }))
+
+              // 收到每批次结果时，实时追加到 processedBatch
+              if (data.latestResults && Array.isArray(data.latestResults)) {
+                const batchItems: FileInfo[] = data.latestResults.map((r: { filePath: string; title: string; success: boolean; error?: string }) => ({
+                  filePath: r.filePath,
+                  title: r.title,
+                  author: null,
+                  metadataUpdated: r.success,
+                  metadataError: r.success ? null : (r.error || '更新失败'),
+                }))
+                setProcessedBatch(prev => [...prev, ...batchItems])
+              }
 
               if (data.type === 'done') {
                 message.success(`更新完成: 成功 ${data.success || 0}, 失败 ${data.failed || 0}`)
