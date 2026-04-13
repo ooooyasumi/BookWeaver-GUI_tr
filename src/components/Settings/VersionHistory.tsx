@@ -12,10 +12,24 @@ interface VersionEntry {
   changed: string[]
 }
 
-const CURRENT_VERSION = '0.6.2'
+const CURRENT_VERSION = '0.6.3'
 
 // 内嵌的版本历史数据（与 CHANGELOG.md 保持同步）
 const VERSION_HISTORY: VersionEntry[] = [
+  {
+    version: '0.6.3',
+    date: '2026-04-13',
+    added: [
+      '内置调试日志终端：设置页面内新增实时调试日志查看器',
+      '日志终端独立页面：调试日志终端移至侧边栏独立菜单入口',
+    ],
+    fixed: [
+      'DevTools 自动打开：移除开发模式自动打开 Chrome DevTools',
+      '调试日志终端显示：修复日志终端在设置界面正确显示',
+      'Switch 响应延迟：Switch onChange 直接调用 setDebugMode 确保立即响应',
+    ],
+    changed: [],
+  },
   {
     version: '0.6.2',
     date: '2026-04-09',

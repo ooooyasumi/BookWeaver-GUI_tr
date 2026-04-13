@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-04-13
+
+### Added
+
+- **内置调试日志终端**：设置页面内新增实时调试日志查看器
+- **日志终端独立页面**：调试日志终端移至侧边栏独立菜单入口
+
+### Fixed
+
+- **DevTools 自动打开**：移除开发模式自动打开 Chrome DevTools
+- **调试日志终端显示**：修复日志终端在设置界面正确显示
+- **Switch 响应延迟**：Switch onChange 直接调用 setDebugMode 确保立即响应
+
 ## [0.6.2] - 2026-04-09
 
 ### Added
