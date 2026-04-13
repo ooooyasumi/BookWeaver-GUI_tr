@@ -5,6 +5,7 @@
 import os
 import re
 import json
+import sys
 import asyncio
 import tempfile
 from pathlib import Path
@@ -34,6 +35,27 @@ def clean_text(text):
     text = _emoji_pattern.sub('', text)
     text = _special_pattern.sub('', text)
     return text.strip()
+
+
+def safe_print(msg: str):
+    """打印到控制台，忽略编码错误（Windows GBK 环境兜底）"""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        try:
+            print(msg.encode('utf-8', errors='replace').decode('utf-8'))
+        except Exception:
+            pass
+
+
+async def safe_callback(callback, event):
+    """安全调用 progress_callback，异常不打断上传循环"""
+    if callback:
+        try:
+            await callback(event)
+        except Exception as e:
+            safe_print(f"[Upload] 进度回调异常: {e}")
+
 
 # ==================== 配置常量 ====================
 
@@ -232,35 +254,35 @@ async def upload_file_to_oss(
 
     for attempt in range(MAX_RETRIES):
         try:
-            print(f"[Upload] 上传 {file_name} ({file_size} bytes) 到 {base_url} (尝试 {attempt+1}/{MAX_RETRIES})")
+            safe_print(f"[Upload] 上传 {file_name} ({file_size} bytes) 到 {base_url} (尝试 {attempt+1}/{MAX_RETRIES})")
             async with httpx.AsyncClient(timeout=timeout) as client:
                 with open(file_path, 'rb') as f:
                     files = {'file': (os.path.basename(file_path), f)}
                     response = await client.post(url, files=files)
 
-                print(f"[Upload] {file_name} 响应: status={response.status_code}")
+                safe_print(f"[Upload] {file_name} 响应: status={response.status_code}")
                 if response.status_code == 200:
                     result = response.json()
                     if result.get('code') == 10000:
                         access_url = result.get('data', {}).get('accessUrl')
                         if access_url:
                             return access_url
-                        print(f"[Upload] {file_name} 响应无 accessUrl: {result}")
+                        safe_print(f"[Upload] {file_name} 响应无 accessUrl: {result}")
                         return None
                     else:
-                        print(f"[Upload] {file_name} 业务错误: {result}")
+                        safe_print(f"[Upload] {file_name} 业务错误: {result}")
         except httpx.TimeoutException as e:
-            print(f"[Upload] {file_name} 超时: {e}")
+            safe_print(f"[Upload] {file_name} 超时: {e}")
         except httpx.RequestError as e:
-            print(f"[Upload] {file_name} 网络错误: {e}")
+            safe_print(f"[Upload] {file_name} 网络错误: {e}")
         except Exception as e:
-            print(f"[Upload] {file_name} 未知错误: {type(e).__name__}: {e}")
+            safe_print(f"[Upload] {file_name} 未知错误: {type(e).__name__}: {e}")
 
         if attempt < MAX_RETRIES - 1:
-            print(f"[Upload] {file_name} 等待 {RETRY_DELAY}s 后重试...")
+            safe_print(f"[Upload] {file_name} 等待 {RETRY_DELAY}s 后重试...")
             await asyncio.sleep(RETRY_DELAY)
 
-    print(f"[Upload] {file_name} 上传失败，已重试 {MAX_RETRIES} 次")
+    safe_print(f"[Upload] {file_name} 上传失败，已重试 {MAX_RETRIES} 次")
     return None
 
 
@@ -288,12 +310,12 @@ async def check_duplicate(
                     if result.get('code') == 10000:
                         records = result.get('data', {}).get('records', [])
                         if records:
-                            print(f"[Duplicate] 发现重复书籍：《{name}》by {author}")
+                            safe_print(f"[Duplicate] 发现重复书籍：《{name}》by {author}")
                             return True
                     return False
         except (httpx.TimeoutException, httpx.RequestError) as e:
             if attempt == MAX_RETRIES - 1:
-                print(f"[Duplicate] 查重失败 {name}: {e}")
+                safe_print(f"[Duplicate] 查重失败 {name}: {e}")
                 return False  # 出错时不跳过，继续上传
 
         if attempt < MAX_RETRIES - 1:
@@ -526,13 +548,13 @@ async def upload_single_book(
         { success, error, title, filePath }
     """
     title = os.path.basename(file_path)
-    print(f"[Upload] 开始处理: {file_path}")
+    safe_print(f"[Upload] 开始处理: {file_path}")
 
     # 1. 提取元数据
     metadata = extract_upload_metadata(file_path)
     if not metadata:
         error = "无法解析 EPUB"
-        print(f"[Upload] 失败 {title}: {error}")
+        safe_print(f"[Upload] 失败 {title}: {error}")
         mark_failed(workspace_path, file_path, error)
         return {"success": False, "error": error, "title": title, "filePath": file_path, "status": "failed"}
 
@@ -541,14 +563,14 @@ async def upload_single_book(
     # 2. 验证必填字段
     valid, error_msg = validate_upload_metadata(metadata)
     if not valid:
-        print(f"[Upload] 失败 {title}: {error_msg}")
+        safe_print(f"[Upload] 失败 {title}: {error_msg}")
         mark_failed(workspace_path, file_path, error_msg)
         return {"success": False, "error": error_msg, "title": title, "filePath": file_path, "status": "failed"}
 
     # 3. 检查封面
     if not metadata.get("cover_data"):
         error = "无法提取封面"
-        print(f"[Upload] 失败 {title}: {error}")
+        safe_print(f"[Upload] 失败 {title}: {error}")
         mark_failed(workspace_path, file_path, error)
         return {"success": False, "error": error, "title": title, "filePath": file_path, "status": "failed"}
 
@@ -558,17 +580,16 @@ async def upload_single_book(
     if book_name and book_author:
         if await check_duplicate(book_name, book_author, base_url):
             error = "书籍已存在"
-            print(f"[Upload] 跳过 {title}: {error}")
+            safe_print(f"[Upload] 跳过 {title}: {error}")
             mark_failed(workspace_path, file_path, error)
             return {"success": False, "error": error, "title": title, "filePath": file_path, "status": "failed"}
 
     # 5. 上传封面
-    if progress_callback:
-        await progress_callback({
-            "type": "stage",
-            "stage": "uploading_cover",
-            "bookTitle": title,
-        })
+    await safe_callback(progress_callback, {
+        "type": "stage",
+        "stage": "uploading_cover",
+        "bookTitle": title,
+    })
 
     # 保存封面到临时文件
     cover_name, cover_bytes = metadata["cover_data"]
@@ -591,12 +612,11 @@ async def upload_single_book(
         return {"success": False, "error": "Cancelled", "title": title, "filePath": file_path, "status": "cancelled"}
 
     # 6. 上传 EPUB 文件
-    if progress_callback:
-        await progress_callback({
-            "type": "stage",
-            "stage": "uploading_epub",
-            "bookTitle": title,
-        })
+    await safe_callback(progress_callback, {
+        "type": "stage",
+        "stage": "uploading_epub",
+        "bookTitle": title,
+    })
 
     book_url = await upload_file_to_oss(file_path, base_url, timeout=120.0)
     if not book_url:
@@ -608,12 +628,11 @@ async def upload_single_book(
         return {"success": False, "error": "Cancelled", "title": title, "filePath": file_path, "status": "cancelled"}
 
     # 7. 添加书籍到平台
-    if progress_callback:
-        await progress_callback({
-            "type": "stage",
-            "stage": "adding_book",
-            "bookTitle": title,
-        })
+    await safe_callback(progress_callback, {
+        "type": "stage",
+        "stage": "adding_book",
+        "bookTitle": title,
+    })
 
     book_data = prepare_book_data(metadata, cover_url, book_url)
     success, error_msg = await add_book_to_platform(book_data, base_url)
@@ -681,16 +700,15 @@ async def upload_books_batch(
         else:
             failed_count += 1
 
-        if progress_callback:
-            await progress_callback({
-                "type": "progress",
-                "processed": i + 1,
-                "total": len(files),
-                "success": success_count,
-                "failed": failed_count,
-                "skipped": skipped_count,
-                "latestResult": result,
-            })
+        await safe_callback(progress_callback, {
+            "type": "progress",
+            "processed": i + 1,
+            "total": len(files),
+            "success": success_count,
+            "failed": failed_count,
+            "skipped": skipped_count,
+            "latestResult": result,
+        })
 
     return {
         "success": success_count,
