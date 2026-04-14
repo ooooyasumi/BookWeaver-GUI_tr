@@ -59,7 +59,7 @@ def update_epub_metadata(file_path: str, metadata: dict) -> tuple:
         # ebooklib 的 DC 命名空间 key 是完整的 URI
         dc_ns = 'http://purl.org/dc/elements/1.1/'
         if dc_ns in book.metadata:
-            for field in ('description', 'subject', 'date'):
+            for field in ('description', 'subject', 'date', 'creator'):
                 if field in book.metadata[dc_ns]:
                     book.metadata[dc_ns][field] = []
 
@@ -75,6 +75,10 @@ def update_epub_metadata(file_path: str, metadata: dict) -> tuple:
         # 更新出版年份 (DC:date) - 只写年份
         book.add_metadata('DC', 'date', str(metadata['publishYear']))
 
+        # 更新作者 (DC:creator)
+        if metadata.get('author'):
+            book.add_metadata('DC', 'creator', metadata['author'])
+
         # 保存 EPUB（使用 UTF-8 编码支持多语言字符）
         epub.write_epub(file_path, book, {"encoding": "utf-8"})
 
@@ -88,9 +92,14 @@ def update_file_metadata_status(
     workspace_path: str,
     file_path: str,
     updated: bool,
-    error: Optional[str] = None
+    error: Optional[str] = None,
+    new_metadata: Optional[dict] = None
 ):
-    """更新文件的元数据状态"""
+    """更新文件的元数据状态
+
+    Args:
+        new_metadata: 更新成功后要写入索引的元数据（author/description/subjects/publishYear）
+    """
     index_data = load_index(workspace_path)
     if not index_data:
         index_data = {"files": {}, "version": "1.0"}
@@ -99,6 +108,16 @@ def update_file_metadata_status(
         index_data["files"][file_path]["metadataUpdated"] = updated
         index_data["files"][file_path]["metadataUpdatedAt"] = datetime.now().isoformat() if updated else None
         index_data["files"][file_path]["metadataError"] = error
+        # 更新实际元数据到索引
+        if updated and new_metadata:
+            if "author" in new_metadata:
+                index_data["files"][file_path]["author"] = new_metadata["author"]
+            if "description" in new_metadata:
+                index_data["files"][file_path]["description"] = new_metadata["description"]
+            if "subjects" in new_metadata:
+                index_data["files"][file_path]["subjects"] = new_metadata["subjects"]
+            if "publishYear" in new_metadata:
+                index_data["files"][file_path]["publishYear"] = new_metadata["publishYear"]
 
     save_index(workspace_path, index_data)
 
@@ -267,10 +286,12 @@ async def update_metadata_for_files(
                 success, error = update_epub_metadata(file_info["filePath"], metadata)
 
                 if success:
+                    # 写入成功后更新索引（包含作者等信息）
                     update_file_metadata_status(
                         workspace_path,
                         file_info["filePath"],
-                        updated=True
+                        updated=True,
+                        new_metadata=metadata
                     )
                     batch_results.append({
                         "filePath": file_info["filePath"],

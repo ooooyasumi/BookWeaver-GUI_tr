@@ -481,6 +481,10 @@ async def call_llm_single(
     """
     prompt = build_single_prompt(title, author)
 
+    # 验证 api_key 不为空，避免产生非法 header
+    if not api_key:
+        return {"success": False, "error": "LLM apiKey 为空，请检查配置"}
+
     async with httpx.AsyncClient(timeout=timeout) as client:
         retry_count = 0
 
@@ -563,6 +567,13 @@ async def call_llm_batch(
     """
     if not books:
         return []
+
+    # 验证 api_key 不为空，避免产生非法 header
+    if not api_key:
+        return [{
+            "success": False,
+            "error": "LLM apiKey 为空，请检查配置"
+        } for _ in books]
 
     try:
         prompt = build_batch_prompt(books)
