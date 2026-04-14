@@ -14,13 +14,19 @@ from ebooklib import epub
 from .llm_harness import call_llm_batch
 from .epub_meta import INDEX_FILE, load_index, save_index
 
-# 批量处理的最大书籍数量
+# 批量处理的最大书籍数量（可运行时调整）
 BATCH_SIZE = 5
 # 并发控制
 MAX_CONCURRENT_BATCHES = 2
 
 # 取消标志
 _cancel_flag = False
+
+
+def set_batch_size(size: int):
+    """设置每批处理的书籍数量 (5-15)"""
+    global BATCH_SIZE
+    BATCH_SIZE = max(5, min(15, size))
 
 
 def set_cancel_flag(value: bool = True):

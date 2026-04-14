@@ -63,6 +63,7 @@ export interface AIContext {
 export interface Config {
   llm: LLMConfig
   download: DownloadConfig
+  metadata?: MetadataConfig
 }
 
 export interface LLMConfig {
@@ -76,4 +77,8 @@ export interface LLMConfig {
 export interface DownloadConfig {
   concurrent: number
   timeout: number
+}
+
+export interface MetadataConfig {
+  batchSize: number  // 每批处理的书本数量 (5-15)
 }

@@ -18,7 +18,8 @@ from core.metadata_updater import (
     get_metadata_status,
     update_metadata_for_files,
     set_cancel_flag,
-    reset_cancel_flag
+    reset_cancel_flag,
+    set_batch_size,
 )
 
 router = APIRouter()
@@ -34,6 +35,16 @@ class UpdateRequest(BaseModel):
     workspacePath: str
     files: list[FileInfo]
     config: dict
+    batchSize: Optional[int] = None  # 可选，覆盖默认 BATCH_SIZE
+
+
+@router.post("/batch-size")
+async def set_batch_size_endpoint(batchSize: int):
+    """设置每批处理的书籍数量 (5-15)"""
+    if batchSize < 5 or batchSize > 15:
+        raise HTTPException(status_code=400, detail="batchSize 必须在 5-15 之间")
+    set_batch_size(batchSize)
+    return {"success": True, "batchSize": batchSize}
 
 
 @router.get("/status")
@@ -72,6 +83,10 @@ async def update_metadata(request: UpdateRequest):
 
         # 在后台任务中运行更新
         async def run_update():
+            # 应用自定义 batchSize（如果提供）
+            if request.batchSize is not None:
+                set_batch_size(request.batchSize)
+
             try:
                 result = await update_metadata_for_files(
                     workspace_path=request.workspacePath,

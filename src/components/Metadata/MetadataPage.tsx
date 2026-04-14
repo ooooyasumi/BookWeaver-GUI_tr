@@ -204,6 +204,7 @@ export function MetadataPage() {
     }
 
     const config = await window.electronAPI.getConfig()
+    const batchSize = config?.metadata?.batchSize
 
     // 开始前清空上次的增量结果
     setProcessedBatch([])
@@ -219,14 +220,18 @@ export function MetadataPage() {
     setSelected(new Set())
 
     try {
+      const payload: any = {
+        workspacePath,
+        files: filesToUpdate,
+        config: config?.llm || {}
+      }
+      if (batchSize) {
+        payload.batchSize = batchSize
+      }
       const response = await fetch(`${API_BASE}/metadata/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspacePath,
-          files: filesToUpdate,
-          config: config?.llm || {}
-        }),
+        body: JSON.stringify(payload),
         signal: controller.signal
       })
 

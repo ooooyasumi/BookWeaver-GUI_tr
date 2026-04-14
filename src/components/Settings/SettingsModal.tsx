@@ -26,6 +26,9 @@ interface DownloadConfig {
 interface Config {
   llm: LLMConfig
   download: DownloadConfig
+  metadata?: {
+    batchSize?: number
+  }
   debugMode?: boolean
 }
 
@@ -79,6 +82,9 @@ const DEFAULT_CONFIG: Config = {
   download: {
     concurrent: 3,
     timeout: 30
+  },
+  metadata: {
+    batchSize: 5
   },
   debugMode: false
 }
@@ -456,6 +462,24 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               </Row>
             </Form>
           )}
+        </div>
+
+        <Divider style={{ margin: '16px 0 20px' }} />
+
+        {/* 元数据配置 */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            元数据配置
+          </div>
+          <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item name={['metadata', 'batchSize']} label="每批处理数量" tooltip="每批发送给 LLM 的书本数量 (5-15)" style={{ marginBottom: 0 }}>
+                  <InputNumber min={5} max={15} style={{ width: '100%' }} size="large" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
         </div>
 
         <Divider style={{ margin: '16px 0 20px' }} />
