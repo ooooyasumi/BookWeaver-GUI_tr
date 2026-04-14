@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-04-14
+
+### Added
+
+- **所有页面分页和性能优化**：新增统一分页组件，支持 20/50/100/全部 选项，MetadataPage、DownloadPage、UploadPage、LibraryPage、SearchPage 均已接入
+
+### Fixed
+
+- **UploadPage 崩溃**：修复误删 Select 导入导致页面空白问题
+- **MetadataPage 筛选错误**：修复筛选状态使用错误的 FilterKey 值（'updated'/'notUpdated' 应为 'metadataUpdated'/'metadataNotUpdated'）
+
 ## [0.6.8] - 2026-04-13
 
 ### Added

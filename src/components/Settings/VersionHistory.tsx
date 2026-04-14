@@ -12,10 +12,22 @@ interface VersionEntry {
   changed: string[]
 }
 
-const CURRENT_VERSION = '0.6.8'
+const CURRENT_VERSION = '0.7.0'
 
 // 内嵌的版本历史数据（与 CHANGELOG.md 保持同步）
 const VERSION_HISTORY: VersionEntry[] = [
+  {
+    version: '0.7.0',
+    date: '2026-04-14',
+    added: [
+      '所有页面分页和性能优化：新增统一分页组件，支持 20/50/100/全部 选项',
+    ],
+    fixed: [
+      'UploadPage 缺少 Select 导入导致页面崩溃',
+      'MetadataPage 筛选状态使用错误的 FilterKey 值',
+    ],
+    changed: [],
+  },
   {
     version: '0.6.8',
     date: '2026-04-13',
