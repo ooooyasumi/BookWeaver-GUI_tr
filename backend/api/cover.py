@@ -32,18 +32,45 @@ class CoverUpdateRequest(BaseModel):
 class ThumbnailRequest(BaseModel):
     workspacePath: str
     filePaths: List[str]
+    offset: int = 0  # 跳过前 N 个
+    limit: int = 0    # 最多处理 N 个，0=全部
 
 
 # ─── 状态查询（轻量，不含缩略图）─────────────────────────────────────────────
 
 @router.get("/status")
-async def cover_status(workspacePath: str):
-    """获取封面管理状态（不含缩略图，快速返回）."""
+async def cover_status(
+    workspacePath: str,
+    offset: int = 0,
+    limit: int = 0,
+    filter_updated: Optional[str] = None,  # "all"|"updated"|"notUpdated"
+):
+    """获取封面管理状态（不含缩量图，快速返回），支持分页.
+
+    - offset: 跳过前 N 条
+    - limit: 最多返回 N 条，0=不限制
+    - filter_updated: "all"|"updated"|"notUpdated"，默认 "all"
+    """
     if not workspacePath:
         raise HTTPException(status_code=400, detail="缺少 workspacePath 参数")
 
     try:
-        status = get_cover_status(workspacePath)
+        # 转换 filter_updated 字符串为布尔值
+        filter_map = {
+            "all": None,
+            "updated": True,
+            "notUpdated": False,
+            "": None,
+            None: None,
+        }
+        filter_bool = filter_map.get(filter_updated)
+
+        status = get_cover_status(
+            workspacePath,
+            offset=offset,
+            limit=limit,
+            filter_updated=filter_bool,
+        )
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[Cover] get_cover_status 失败: {e}\n{tb}")
@@ -59,12 +86,19 @@ async def cover_status(workspacePath: str):
 
 @router.post("/thumbnails")
 async def cover_thumbnails(request: ThumbnailRequest):
-    """批量提取封面缩略图 base64（前端异步调用）."""
+    """批量提取封面缩略图 base64（前端异步调用，支持分页）."""
     if not request.workspacePath:
         raise HTTPException(status_code=400, detail="缺少 workspacePath 参数")
 
     try:
-        thumbnails = get_cover_thumbnails(request.workspacePath, request.filePaths)
+        # 应用分页参数
+        file_paths = request.filePaths
+        if request.limit > 0:
+            file_paths = file_paths[request.offset:request.offset + request.limit]
+        elif request.offset > 0:
+            file_paths = file_paths[request.offset:]
+
+        thumbnails = get_cover_thumbnails(request.workspacePath, file_paths)
     except Exception as e:
         tb = traceback.format_exc()
         print(f"[Cover] get_cover_thumbnails 失败: {e}\n{tb}")

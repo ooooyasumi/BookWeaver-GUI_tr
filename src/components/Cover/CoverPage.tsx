@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Card, Button, Space, Checkbox, message, Spin, Slider, Typography, Modal } from 'antd'
 import { PictureOutlined, SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
@@ -28,13 +28,16 @@ interface CoverFileInfo {
 
 interface CoverStatus {
   total: number
+  offset: number
+  limit: number
   notUpdated: number
   updated: number
   notUpdatedFiles: CoverFileInfo[]
   updatedFiles: CoverFileInfo[]
+  files: CoverFileInfo[]  // 当前页数据
 }
 
-// ─── 封面卡片 ────────────────────────────────────────────────────────────────
+// ─── 封面卡片（支持懒加载缩略图）───────────────────────────────────────────────
 
 function CoverCard({
   book,
@@ -42,19 +45,38 @@ function CoverCard({
   onToggle,
   colWidth,
   thumbLoading,
+  onVisible,
 }: {
   book: CoverFileInfo
   selected: boolean
   onToggle: () => void
   colWidth: number
   thumbLoading?: boolean
+  onVisible?: (filePath: string) => void
 }) {
   const coverSrc = book.coverBase64
     ? `data:${book.coverMediaType || 'image/jpeg'};base64,${book.coverBase64}`
     : null
 
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node || !onVisible) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !book.coverBase64) {
+            onVisible(book.filePath)
+          }
+        })
+      },
+      { rootMargin: '100px' }  // 提前 100px 开始加载
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [onVisible, book.filePath, book.coverBase64])
+
   return (
     <div
+      ref={containerRef}
       onClick={onToggle}
       style={{
         width: colWidth,
@@ -156,9 +178,14 @@ export function CoverPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [columns, setColumns] = useState(5)
   const [deleting, setDeleting] = useState(false)
+  const [visibleBooks, setVisibleBooks] = useState<Set<string>>(new Set())  // 已加载缩略图的书籍
 
   // 筛选
   const [filters, setFilters] = useState<Set<FilterKey>>(new Set())
+
+  // 分页状态
+  const [pageOffset, setPageOffset] = useState(0)
+  const [pageLimit, setPageLimit] = useState(50)  // 每页显示数量
 
   // 合并全部文件（未更新在前）
   const allBooks = useMemo(() => {
@@ -166,26 +193,36 @@ export function CoverPage() {
     return [...status.notUpdatedFiles, ...status.updatedFiles]
   }, [status])
 
-  // 筛选后的书籍
-  const filteredBooks = useMemo(
-    () => allBooks.filter(b => matchesFilter(b as BookWithAllStatus, filters)),
-    [allBooks, filters]
-  )
+  // 筛选后的书籍（分页后）
+  const filteredBooks = useMemo(() => {
+    const baseFiltered = allBooks.filter(b => matchesFilter(b as BookWithAllStatus, filters))
+    return baseFiltered.slice(pageOffset, pageOffset + pageLimit)
+  }, [allBooks, filters, pageOffset, pageLimit])
+
+  // 总筛选后的数量（用于分页）
+  const totalFiltered = useMemo(() => {
+    return allBooks.filter(b => matchesFilter(b as BookWithAllStatus, filters)).length
+  }, [allBooks, filters])
 
   // 是否正在运行封面任务
   const isRunning = activeTask?.type === 'cover' && activeTask.status === 'running'
   const progress = activeTask?.progress
 
-  // ── 加载缩略图（独立请求）──────────────────────────────────────────────
+  // ── 加载缩略图（独立请求，分页）──────────────────────────────────────────
 
-  const loadThumbnails = useCallback(async (filePaths: string[]) => {
+  const loadThumbnails = useCallback(async (filePaths: string[], offset = 0, limit = 0) => {
     if (!workspacePath || filePaths.length === 0) return
     setThumbLoading(true)
     try {
+      const payload: any = { workspacePath, filePaths }
+      if (offset > 0 || limit > 0) {
+        payload.offset = offset
+        payload.limit = limit
+      }
       const response = await fetch(`${API_BASE}/cover/thumbnails`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workspacePath, filePaths }),
+        body: JSON.stringify(payload),
       })
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
@@ -221,13 +258,18 @@ export function CoverPage() {
 
   // ── 加载状态（轻量，不含缩略图）──────────────────────────────────────────
 
-  const loadStatus = useCallback(async () => {
+  const loadStatus = useCallback(async (usePagination = true) => {
     if (!workspacePath) return
     setLoading(true)
     setStatusError(null)
     try {
-      const query = new URLSearchParams({ workspacePath })
-      const response = await fetch(`${API_BASE}/cover/status?${query}`)
+      const params = new URLSearchParams({ workspacePath })
+      if (usePagination) {
+        params.set('offset', String(pageOffset))
+        params.set('limit', String(pageLimit))
+        params.set('filter_updated', 'all')
+      }
+      const response = await fetch(`${API_BASE}/cover/status?${params}`)
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}))
         const detail = errData.detail || `HTTP ${response.status}`
@@ -235,16 +277,7 @@ export function CoverPage() {
       }
       const data: CoverStatus = await response.json()
       setStatus(data)
-
-      // 状态加载成功后，异步加载缩略图
-      const allPaths = [
-        ...data.notUpdatedFiles.map(f => f.filePath),
-        ...data.updatedFiles.map(f => f.filePath),
-      ]
-      if (allPaths.length > 0) {
-        // 不 await，让页面先渲染
-        loadThumbnails(allPaths)
-      }
+      // 不再自动加载缩略图，改用懒加载（IntersectionObserver）
     } catch (error: any) {
       const errMsg = error?.message || '未知错误'
       console.error('[Cover] 状态加载失败:', errMsg)
@@ -256,7 +289,50 @@ export function CoverPage() {
     } finally {
       setLoading(false)
     }
-  }, [workspacePath, loadThumbnails])
+  }, [workspacePath, pageOffset, pageLimit, loadThumbnails])
+
+  // 分页变化时重载
+  const handlePageChange = useCallback((offset: number, limit: number) => {
+    setPageOffset(offset)
+    setPageLimit(limit)
+    setSelected(new Set())
+    setVisibleBooks(new Set())  // 清空已加载的缩略图
+  }, [])
+
+  // ── 懒加载：滚动到可见范围时加载单个缩略图 ───────────────────────────────
+
+  const handleBookVisible = useCallback(async (filePath: string) => {
+    if (!workspacePath || visibleBooks.has(filePath)) return
+    setVisibleBooks(prev => new Set(prev).add(filePath))
+    setThumbLoading(true)
+    try {
+      const response = await fetch(`${API_BASE}/cover/thumbnails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspacePath, filePaths: [filePath] }),
+      })
+      if (!response.ok) return
+      const data = await response.json()
+      const thumbnails = data.thumbnails || {}
+      const thumb = thumbnails[filePath]
+      if (thumb) {
+        setStatus(prev => {
+          if (!prev) return prev
+          const updateBook = (list: CoverFileInfo[]) =>
+            list.map(b => b.filePath === filePath ? { ...b, coverBase64: thumb.base64, coverMediaType: thumb.mediaType } : b)
+          return {
+            ...prev,
+            notUpdatedFiles: updateBook(prev.notUpdatedFiles),
+            updatedFiles: updateBook(prev.updatedFiles),
+          }
+        })
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setThumbLoading(false)
+    }
+  }, [workspacePath, visibleBooks])
 
   useEffect(() => {
     loadStatus()
@@ -599,11 +675,70 @@ export function CoverPage() {
                 onToggle={() => toggleSelection(book.filePath)}
                 colWidth={colWidthCalc as any}
                 thumbLoading={thumbLoading && !book.coverBase64}
+                onVisible={!book.coverBase64 ? handleBookVisible : undefined}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* 分页控制 */}
+      {status && status.total > pageLimit && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 4px', flexShrink: 0, background: 'var(--bg-secondary)',
+          borderRadius: 8, marginBottom: 8,
+        }}>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            共 {totalFiltered} 本 | 当前 {pageOffset + 1}-{Math.min(pageOffset + pageLimit, totalFiltered)} 本
+          </Text>
+          <Space>
+            <Button
+              size="small"
+              disabled={pageOffset === 0}
+              onClick={() => handlePageChange(0, pageLimit)}
+            >
+              首页
+            </Button>
+            <Button
+              size="small"
+              disabled={pageOffset === 0}
+              onClick={() => handlePageChange(Math.max(0, pageOffset - pageLimit), pageLimit)}
+            >
+              上一页
+            </Button>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', padding: '0 8px' }}>
+              第 {Math.floor(pageOffset / pageLimit) + 1} / {Math.ceil(totalFiltered / pageLimit)} 页
+            </span>
+            <Button
+              size="small"
+              disabled={pageOffset + pageLimit >= totalFiltered}
+              onClick={() => handlePageChange(pageOffset + pageLimit, pageLimit)}
+            >
+              下一页
+            </Button>
+            <Button
+              size="small"
+              disabled={pageOffset + pageLimit >= totalFiltered}
+              onClick={() => handlePageChange(Math.floor((totalFiltered - 1) / pageLimit) * pageLimit, pageLimit)}
+            >
+              末页
+            </Button>
+            <select
+              value={pageLimit}
+              onChange={e => handlePageChange(0, Number(e.target.value))}
+              style={{
+                background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
+                borderRadius: 4, padding: '2px 8px', color: 'var(--text-primary)',
+              }}
+            >
+              <option value={20}>20/页</option>
+              <option value={50}>50/页</option>
+              <option value={100}>100/页</option>
+            </select>
+          </Space>
+        </div>
+      )}
     </div>
   )
 }

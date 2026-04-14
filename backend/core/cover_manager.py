@@ -315,8 +315,20 @@ def update_file_cover_status(
 
 # ==================== 状态查询 ====================
 
-def get_cover_status(workspace_path: str) -> Dict[str, Any]:
-    """获取封面状态统计."""
+def get_cover_status(
+    workspace_path: str,
+    offset: int = 0,
+    limit: int = 0,  # 0 = 不限制
+    filter_updated: Optional[bool] = None,  # None=全部, True=仅已更新, False=仅未更新
+) -> Dict[str, Any]:
+    """获取封面状态统计，支持分页和过滤.
+
+    Args:
+        workspace_path: 工作区路径
+        offset: 跳过前 N 条
+        limit: 最多返回 N 条，0=不限制（返回全部）
+        filter_updated: None=全部, True=仅已更新, False=仅未更新
+    """
     index = get_or_build_index(workspace_path)
     files = index.get("files", {})
 
@@ -340,12 +352,31 @@ def get_cover_status(workspace_path: str) -> Dict[str, Any]:
         else:
             not_updated.append(entry)
 
+    # 应用过滤
+    if filter_updated is True:
+        filtered = updated
+    elif filter_updated is False:
+        filtered = not_updated
+    else:
+        filtered = not_updated + updated  # 全部（未更新优先）
+
+    total = len(filtered)
+
+    # 应用分页
+    if limit > 0:
+        paginated = filtered[offset:offset + limit]
+    else:
+        paginated = filtered[offset:]
+
     return {
-        "total": len(files),
+        "total": total,
+        "offset": offset,
+        "limit": limit,
         "notUpdated": len(not_updated),
         "updated": len(updated),
-        "notUpdatedFiles": not_updated,
-        "updatedFiles": updated,
+        "notUpdatedFiles": not_updated if filter_updated is False or filter_updated is None else [],
+        "updatedFiles": updated if filter_updated is True or filter_updated is None else [],
+        "files": paginated,  # 当前页的数据
     }
 
 
