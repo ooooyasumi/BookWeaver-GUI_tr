@@ -98,6 +98,9 @@ export interface Config {
     concurrent: number
     timeout: number
   }
+  upload?: {
+    concurrent: number
+  }
 }
 
 export type PageType = 'search' | 'download' | 'library' | 'metadata' | 'cover' | 'upload' | 'logs'
@@ -177,7 +180,7 @@ interface WorkspaceContextType {
 
   // 活跃任务操作（纯内存）
   setActiveTask: (task: ActiveTask | null) => void
-  updateActiveTask: (updates: Partial<ActiveTask>) => void
+  updateActiveTask: (updates: Partial<ActiveTask> | ((prev: ActiveTask | null) => Partial<ActiveTask>)) => void
   pauseTask: () => void
   cancelTask: () => void
 }

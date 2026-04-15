@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, Button, Space, Checkbox, message, Spin, Slider, Typography, Modal } from 'antd'
 import { PictureOutlined, SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons'
-import { useWorkspace } from '../../contexts/WorkspaceContext'
+import { useWorkspace, ActiveTask } from '../../contexts/WorkspaceContext'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
 import { TaskProgressCard } from '../Common/TaskProgressCard'
 import { BookFilter, FilterKey, matchesFilter, BookWithAllStatus } from '../Common/BookFilter'
@@ -413,7 +413,7 @@ export function CoverPage() {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6))
-              updateActiveTask(prev => ({ progress: { ...(prev?.progress || {}), ...data } }))
+              updateActiveTask((prev: ActiveTask | null): Partial<ActiveTask> => ({ progress: { ...(prev?.progress || {}), ...data } }))
 
               // 实时更新封面：当某本书更新成功，更新 status 中对应书的封面
               if (data.latestResult?.success && data.latestResult.coverBase64) {
@@ -555,7 +555,7 @@ export function CoverPage() {
         }}>
           {statusError}
         </div>
-        <Button type="primary" icon={<SyncOutlined />} onClick={loadStatus}>
+        <Button type="primary" icon={<SyncOutlined />} onClick={() => loadStatus()}>
           重试
         </Button>
       </div>

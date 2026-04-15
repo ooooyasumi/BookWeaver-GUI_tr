@@ -667,7 +667,7 @@ async def upload_single_book(
 
 # ==================== 批量上传 ====================
 
-MAX_CONCURRENT_UPLOAD = 3
+DEFAULT_MAX_CONCURRENT_UPLOAD = 3
 
 
 async def upload_books_batch(
@@ -675,21 +675,23 @@ async def upload_books_batch(
     files: List[Dict[str, Any]],
     base_url: str,
     progress_callback=None,
+    max_concurrent: int = DEFAULT_MAX_CONCURRENT_UPLOAD,
 ) -> Dict[str, Any]:
     """
-    批量上传书籍（并发执行，最多 MAX_CONCURRENT_UPLOAD 同时上传）
+    批量上传书籍（并发执行，最多 max_concurrent 同时上传）
 
     Args:
         workspace_path: 工作区路径
         files: 要上传的文件列表
         base_url: 云控平台 API 地址
         progress_callback: 进度回调
+        max_concurrent: 最大并发数
 
     Returns:
         { success, failed, skipped, results }
     """
     reset_cancel_flag()
-    semaphore = asyncio.Semaphore(MAX_CONCURRENT_UPLOAD)
+    semaphore = asyncio.Semaphore(max_concurrent)
 
     # 结果顺序与 files 一致（按 index 填充）
     results: List[Dict[str, Any]] = [None] * len(files)

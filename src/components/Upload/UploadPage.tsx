@@ -4,7 +4,7 @@ import {
   CloudUploadOutlined, CheckCircleOutlined,
   FileTextOutlined, ExclamationCircleOutlined, CloseCircleOutlined,
 } from '@ant-design/icons'
-import { useWorkspace } from '../../contexts/WorkspaceContext'
+import { useWorkspace, ActiveTask } from '../../contexts/WorkspaceContext'
 import { BookDetailDrawer, formatFileSize, BookInfo } from '../Common/BookDetailDrawer'
 import { TaskProgressCard } from '../Common/TaskProgressCard'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
@@ -162,6 +162,26 @@ export function UploadPage() {
   const [pageOffset, setPageOffset] = useState(0)
   const [pageLimit, setPageLimit] = useState(50)
 
+  // 上传并发数
+  const [uploadConcurrent, setUploadConcurrent] = useState(3)
+
+  // 加载上传并发数配置
+  useEffect(() => {
+    const loadUploadConfig = async () => {
+      try {
+        const config = await window.electronAPI.getConfig()
+        if (config?.upload?.concurrent) {
+          setUploadConcurrent(config.upload.concurrent)
+        }
+      } catch (error) {
+        console.error('加载上传配置失败:', error)
+      }
+    }
+    if (workspacePath) {
+      loadUploadConfig()
+    }
+  }, [workspacePath])
+
   // 合并所有书籍到一个列表，标记状态
   const allBooks = useMemo(() => {
     if (!status) return []
@@ -255,6 +275,7 @@ export function UploadPage() {
           workspacePath,
           files: filesToUpload,
           baseUrl,
+          concurrent: uploadConcurrent,
         }),
         signal: controller.signal,
       })
@@ -275,7 +296,7 @@ export function UploadPage() {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6))
-              updateActiveTask(prev => ({ progress: { ...(prev?.progress || {}), ...data } }))
+              updateActiveTask((prev: ActiveTask | null): Partial<ActiveTask> => ({ progress: { ...(prev?.progress || {}), ...data } }))
 
               if (data.type === 'done') {
                 const msgs: string[] = []

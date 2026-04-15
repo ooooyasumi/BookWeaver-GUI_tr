@@ -26,6 +26,9 @@ interface DownloadConfig {
 interface Config {
   llm: LLMConfig
   download: DownloadConfig
+  upload?: {
+    concurrent?: number
+  }
   metadata?: {
     batchSize?: number
     maxConcurrentBatches?: number
@@ -84,6 +87,9 @@ const DEFAULT_CONFIG: Config = {
     concurrent: 3,
     timeout: 30
   },
+  upload: {
+    concurrent: 3
+  },
   metadata: {
     batchSize: 5,
     maxConcurrentBatches: 2
@@ -129,8 +135,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     try {
       const config = await window.electronAPI.getConfig()
       if (config) {
-        // 判断是否匹配预设配置（apiKey 匹配任一预设则认为是预设模式）
-        const matchedPreset = PRESET_MODELS.find(p => p.apiKey === config.llm?.apiKey)
+        // 判断是否匹配预设配置（apiKey + model 共同匹配任一预设则认为是预设模式）
+        // 注意：qwen 和 qwen-vl 的 apiKey 相同，必须同时匹配 model 才能区分
+        const matchedPreset = PRESET_MODELS.find(p =>
+          p.apiKey === config.llm?.apiKey &&
+          p.model === config.llm?.model &&
+          p.baseUrl === config.llm?.baseUrl
+        )
         const isPreset = !!matchedPreset
         setLlmMode(isPreset ? 'preset' : 'custom')
         if (matchedPreset) {
@@ -145,11 +156,15 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             ...DEFAULT_CONFIG.download,
             ...config.download
           },
+          upload: {
+            ...DEFAULT_CONFIG.upload,
+            ...(config as any).upload
+          },
           metadata: {
             ...DEFAULT_CONFIG.metadata,
-            ...config.metadata
+            ...(config as any).metadata
           },
-          debugMode: config.debugMode ?? false
+          debugMode: (config as any).debugMode ?? false
         })
       } else {
         setLlmMode('preset')
@@ -157,6 +172,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         form.setFieldsValue({
           llm: PRESET_MODELS[0],
           download: DEFAULT_CONFIG.download,
+          upload: DEFAULT_CONFIG.upload,
           metadata: DEFAULT_CONFIG.metadata,
           debugMode: false
         })
@@ -165,7 +181,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       console.error('加载配置失败:', error)
       setLlmMode('preset')
       setSelectedPreset(PRESET_MODELS[0].id)
-      form.setFieldsValue({ llm: PRESET_MODELS[0], download: DEFAULT_CONFIG.download, metadata: DEFAULT_CONFIG.metadata, debugMode: false })
+      form.setFieldsValue({ llm: PRESET_MODELS[0], download: DEFAULT_CONFIG.download, upload: DEFAULT_CONFIG.upload, metadata: DEFAULT_CONFIG.metadata, debugMode: false })
     }
   }
 
@@ -205,7 +221,14 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       // 预设模式下强制使用选定预设的 LLM 配置
       if (llmMode === 'preset') {
         const preset = PRESET_MODELS.find(p => p.id === selectedPreset) || PRESET_MODELS[0]
-        values.llm = { ...preset, temperature: values.llm.temperature, maxTokens: values.llm.maxTokens }
+        // 只保留 LLM 有效字段，不存 id 和 label，避免覆盖表单字段
+        values.llm = {
+          apiKey: preset.apiKey,
+          model: preset.model,
+          baseUrl: preset.baseUrl,
+          temperature: values.llm.temperature,
+          maxTokens: values.llm.maxTokens,
+        }
       }
       setLoading(true)
       await window.electronAPI.saveConfig(values)
@@ -511,6 +534,24 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               <Col span={12}>
                 <Form.Item name={['download', 'timeout']} label="超时时间 (秒)" style={{ marginBottom: 0 }}>
                   <InputNumber min={10} max={120} style={{ width: '100%' }} size="large" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </div>
+
+        <Divider style={{ margin: '16px 0 20px' }} />
+
+        {/* 上传配置 */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            上传配置
+          </div>
+          <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item name={['upload', 'concurrent']} label="并发数" tooltip="同时上传的书本数量 (1-10)" style={{ marginBottom: 0 }}>
+                  <InputNumber min={1} max={10} style={{ width: '100%' }} size="large" />
                 </Form.Item>
               </Col>
             </Row>

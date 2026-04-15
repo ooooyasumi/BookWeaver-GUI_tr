@@ -12,10 +12,19 @@ interface VersionEntry {
   changed: string[]
 }
 
-const CURRENT_VERSION = '0.7.0'
+const CURRENT_VERSION = '0.7.1'
 
 // 内嵌的版本历史数据（与 CHANGELOG.md 保持同步）
 const VERSION_HISTORY: VersionEntry[] = [
+  {
+    version: '0.7.1',
+    date: '2026-04-15',
+    added: [
+      '上传并发数可配置：设置界面新增"上传配置"区块，可调整上传并发数（1-10）',
+    ],
+    fixed: [],
+    changed: [],
+  },
   {
     version: '0.7.0',
     date: '2026-04-14',

@@ -134,7 +134,7 @@ export function SearchPage() {
     const loadDebugMode = async () => {
       try {
         const config = await window.electronAPI.getConfig()
-        setDebugMode(config?.debugMode ?? false)
+        setDebugMode((config as any)?.debugMode ?? false)
       } catch {
         setDebugMode(false)
       }

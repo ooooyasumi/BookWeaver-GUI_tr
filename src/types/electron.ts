@@ -63,7 +63,9 @@ export interface AIContext {
 export interface Config {
   llm: LLMConfig
   download: DownloadConfig
+  upload?: UploadConfig
   metadata?: MetadataConfig
+  debugMode?: boolean
 }
 
 export interface LLMConfig {
@@ -82,4 +84,8 @@ export interface DownloadConfig {
 export interface MetadataConfig {
   batchSize: number  // 每批处理的书本数量 (5-15)
   maxConcurrentBatches: number  // 最大并发批次数 (1-5)
+}
+
+export interface UploadConfig {
+  concurrent: number  // 上传并发数 (1-10)
 }

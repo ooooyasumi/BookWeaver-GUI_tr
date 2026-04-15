@@ -33,6 +33,7 @@ class UploadRequest(BaseModel):
     workspacePath: str
     files: list[FileInfo]
     baseUrl: str
+    concurrent: int = 3
 
 
 @router.get("/status")
@@ -73,6 +74,7 @@ async def start_upload(request: UploadRequest):
                     files=files,
                     base_url=request.baseUrl,
                     progress_callback=progress_callback,
+                    max_concurrent=request.concurrent,
                 )
                 await queue.put({
                     'type': 'done',

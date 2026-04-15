@@ -70,6 +70,13 @@ export interface Config {
     concurrent: number
     timeout: number
   }
+  upload?: {
+    concurrent: number
+  }
+  metadata?: {
+    batchSize: number
+    maxConcurrentBatches: number
+  }
 }
 
 // ─── 默认值 ──────────────────────────────────────────────────────────────────
@@ -85,6 +92,13 @@ const DEFAULT_CONFIG: Config = {
   download: {
     concurrent: 3,
     timeout: 30
+  },
+  upload: {
+    concurrent: 3
+  },
+  metadata: {
+    batchSize: 5,
+    maxConcurrentBatches: 2
   }
 }
 
@@ -197,7 +211,13 @@ export class WorkspaceManager {
       const loaded = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
       return {
         llm: { ...DEFAULT_CONFIG.llm, ...loaded.llm },
-        download: { ...DEFAULT_CONFIG.download, ...loaded.download }
+        download: { ...DEFAULT_CONFIG.download, ...loaded.download },
+        upload: loaded.upload
+          ? { ...DEFAULT_CONFIG.upload, ...loaded.upload }
+          : DEFAULT_CONFIG.upload,
+        metadata: loaded.metadata
+          ? { ...DEFAULT_CONFIG.metadata, ...loaded.metadata }
+          : DEFAULT_CONFIG.metadata
       }
     } catch {
       return DEFAULT_CONFIG

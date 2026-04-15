@@ -22,21 +22,40 @@ class DownloadConfig(BaseModel):
     timeout: int = 30
 
 
+class UploadConfig(BaseModel):
+    """上传配置."""
+    concurrent: int = 3
+
+
+class MetadataConfig(BaseModel):
+    """元数据更新配置."""
+    batchSize: int = 5
+    maxConcurrentBatches: int = 2
+
+
 class Config(BaseModel):
     """应用配置."""
     llm: LLMConfig = LLMConfig()
     download: DownloadConfig = DownloadConfig()
+    upload: Optional[UploadConfig] = None
+    metadata: Optional[MetadataConfig] = None
+
+
+# 内存中缓存配置（实际应持久化到工作区）
+_cached_config: Optional[Config] = None
 
 
 @router.get("")
 async def get_config():
     """获取配置."""
-    # TODO: 从工作区读取配置
-    return Config().model_dump()
+    if _cached_config is None:
+        return Config().model_dump()
+    return _cached_config.model_dump()
 
 
 @router.put("")
 async def save_config(config: Config):
     """保存配置."""
-    # TODO: 保存到工作区
+    global _cached_config
+    _cached_config = config
     return {"success": True}

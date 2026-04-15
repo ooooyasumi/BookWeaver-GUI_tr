@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Card, Button, Space, Checkbox, message, Spin, Tag, Typography, Tooltip } from 'antd'
 import { SyncOutlined, FileTextOutlined } from '@ant-design/icons'
-import { useWorkspace } from '../../contexts/WorkspaceContext'
+import { useWorkspace, ActiveTask } from '../../contexts/WorkspaceContext'
 import { BookDetailDrawer, formatFileSize, BookInfo } from '../Common/BookDetailDrawer'
 import { BookStatusIcons } from '../Common/BookStatusIcons'
 import { BookFilter, FilterKey, matchesFilter, BookWithAllStatus } from '../Common/BookFilter'
@@ -281,7 +281,7 @@ export function MetadataPage() {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6))
-              updateActiveTask(prev => ({ progress: { ...(prev?.progress || {}), ...data } }))
+              updateActiveTask((prev: ActiveTask | null): Partial<ActiveTask> => ({ progress: { ...(prev?.progress || {}), ...data } }))
 
               // 收到每批次结果时，实时追加到 processedBatch
               if (data.latestResults && Array.isArray(data.latestResults)) {
